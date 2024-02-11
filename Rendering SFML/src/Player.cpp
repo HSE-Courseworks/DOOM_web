@@ -2,7 +2,8 @@
 
 using namespace sf;
 
-Player::Player(const float size, const Color& color) : object(Vector2f(size, size)), mapDir(), rotationAngle(0)
+Player::Player(const float size, const Color& color) : 
+    object(Vector2f(size, size)), mapDir(), rotationAngle(0)
 {
     object.setOrigin(Vector2f(object.getSize().x / 2.0f, object.getSize().y / 2.0f));
     object.setFillColor(color);
@@ -20,7 +21,7 @@ Player::Player(const float size, const Color& color) : object(Vector2f(size, siz
     mapDir[Vector2i(1, -1)] = 7 * M_PI / 4;
 }
 
-void Player::show(RenderWindow& window)
+void Player::show(RenderWindow& window) const
 {
     window.draw(object);
 }
@@ -30,7 +31,7 @@ void Player::setPosition(const Vector2f& pos)
     object.setPosition(pos);
 }
 
-void Player::detectCollision(Vector2f& delta, Map& gameMap)
+void Player::detectCollision(const Map& gameMap, Vector2f& delta)
 {
     RectangleShape copy(object); copy.move(delta);
 
@@ -69,7 +70,7 @@ void Player::detectCollision(Vector2f& delta, Map& gameMap)
     object.move(delta);
 }
 
-void Player::updatePosition(float delta, Map& gameMap)
+void Player::updatePosition(const Map& gameMap, const float delta)
 {
     float rotAngle = DegToRad(rotationAngle), speed = delta * KOEF_SPEED;
 
@@ -92,22 +93,22 @@ void Player::updatePosition(float delta, Map& gameMap)
 
     Vector2f deltaPos = { (float)(speed * cos(rotAngle - mapDir[result]) * notStay),
                           (float)(speed * sin(rotAngle - mapDir[result]) * notStay) };
-    detectCollision(deltaPos, gameMap);
+    detectCollision(gameMap, deltaPos);
 }
 
-void Player::rotate(float speed, RenderWindow& window)
+void Player::rotate(RenderWindow& window, const float speed)
 {
     int rotateDist = Mouse::getPosition(window).x - window.getSize().x / 2.0f;
     Mouse::setPosition({ (int)(window.getSize().x / 2.0f), (int)(window.getSize().y / 2.0f) }, window);
-    rotationAngle = rotationAngle + rotateDist * speed / 2;
+    rotationAngle = rotationAngle + rotateDist * speed / 3;
 }
 
-float Player::getRotation()
+float Player::getRotation() const
 {
 	return rotationAngle;
 }
 
-const Vector2f& Player::getPosition()
+const Vector2f& Player::getPosition() const
 {
 	return object.getPosition();
 }

@@ -6,7 +6,7 @@
 #include <SFML/Graphics.hpp>
 #include "Tools.hpp"
 
-#define SIZE_PIXEL_MAP (300)
+#define SIZE_PIXEL_MAP (240)
 #define THICKNESS_MAP (10)
 
 using namespace sf;
@@ -18,18 +18,17 @@ public:
 	tableBool scheme;
 	std::vector<RectangleShape> objects;
 
-	Map(const std::string& filename, const Color& color_sq);
+	Map(const std::string& filename);
 	void findObjects();
-	void showObjectsInWindow(RenderWindow& window);
-	Color& getFillColor();
-	Vector2f& getMazeSize();
-	Vector2f& getWallSize();
-	RectangleShape& getFrame();
-	Texture* getTexture();
+	void showObjectsInWindow(RenderWindow& window) const;
+	const Color& getFillColor() const;
+	const Vector2f& getMazeSize() const;
+	const Vector2f& getWallSize() const;
+	const RectangleShape& getFrame() const;
+	const Texture* getTexture() const;;
 
 private:
-	Vector2f mazeSize;
-	Vector2f wallSize;
+	Vector2f mazeSize; Vector2f wallSize;
 	Color color;
 	RectangleShape frame;
 	Texture wallTexture;

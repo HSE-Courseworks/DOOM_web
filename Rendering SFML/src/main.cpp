@@ -15,7 +15,7 @@ using namespace sf;
 
 int main()
 {
-    RenderWindow window(VideoMode(2160, 1440), "-", Style::Fullscreen);
+    RenderWindow window(VideoMode(1920, 1080), "New DOOM");
     window.setMouseCursorVisible(false);
     window.setVerticalSyncEnabled(true);
     Mouse::setPosition({ (int)window.getSize().x / 2, (int)window.getSize().y / 2 }, window);
@@ -33,11 +33,12 @@ int main()
             if (Keyboard::isKeyPressed(Keyboard::Escape)) window.close();
             if (event.type == Event::Closed) window.close();
             if (event.type == Event::KeyReleased && event.key.code == Keyboard::M) 
-                game.miniMap = !game.miniMap;
+                game.setFlagMiniMap(!game.getFlagMiniMap());
         }
 
         window.clear(colorSky);
-        game.showWorld(window, time);
+        game.updateWorld(window, time);
+        game.showWorld(window);
         window.display();
     }
     return 0;

@@ -2,7 +2,7 @@
 
 using namespace sf;
 
-Camera::Camera(Map& gameMap) : 
+Camera::Camera(const Map& gameMap) : 
     player(gameMap.getWallSize().x / 4, softRed), 
     sightDist(SIZE_PIXEL_MAP),
     FOV(VIEW_ANGLE), circlePoints(COUNT_POINTS), segment(TriangleFan, 1 + circlePoints)
@@ -13,7 +13,7 @@ Camera::Camera(Map& gameMap) :
     for (int i = 0; i < segment.getVertexCount(); ++i) segment[i].color = semiTransparentWhite;
 }
 
-std::pair<float, Vector2i> Camera::getIntersection(Map& gameMap, Vector2f& p, Vector2f dp, Vector2f& cameraPos)
+std::pair<float, Vector2i> Camera::getIntersection(const Map& gameMap, Vector2f& p, const Vector2f& dp, const Vector2f& cameraPos) const
 {
     float dist = sightDist; int total = gameMap.getMazeSize().x, mapX = 0, mapY = 0;
     for (int cnt = 0; cnt < total; ++cnt)
@@ -32,7 +32,7 @@ std::pair<float, Vector2i> Camera::getIntersection(Map& gameMap, Vector2f& p, Ve
     return { dist, Vector2i(mapX, mapY) };
 }
 
-float Camera::calculateRayDist(Map& gameMap, float angle, float& shiftX)
+float Camera::calculateRayDist(const Map& gameMap, const float angle, float& shiftX) const
 {
     float pointX = 0, pointY = 0, x0 = 0, y0 = 0;
     Vector2f cameraPos = player.getPosition();
@@ -107,31 +107,45 @@ float Camera::calculateRayDist(Map& gameMap, float angle, float& shiftX)
     return std::min(resultHor.first, resultVert.first);
 }
 
-void Camera::show2DViewInWindow(RenderWindow& window)
+void Camera::show2DViewInWindow(RenderWindow& window) const 
 {
     window.draw(segment);
 }
 
-void Camera::show3DViewInWindow(RenderWindow& window, Map& gameMap)
+void Camera::updateSegment(RenderWindow& window, const Map& gameMap)
 {
+    const int FIRST = 0;
+    segment[FIRST].position = player.getPosition();
     float curAngle = player.getRotation() - FOV / 2;
     float deltaAngle = (float)FOV / circlePoints;
-    const int FIRST = 0;
 
-    segment[FIRST].position = player.getPosition();
-    RectangleShape rectWall;
-    rectWall.setTexture(gameMap.getTexture());
     for (size_t i = 0; i < circlePoints; ++i)
     {
         Vector2f curRayPoint;
         curRayPoint.x = cos(DegToRad(curAngle));
         curRayPoint.y = sin(DegToRad(curAngle));
 
-        float curViewAngle = DegToRad(deltaAngle * i - FOV / 2), shiftX = 0;
+        float shiftX = 0;
         float curDist = calculateRayDist(gameMap, DegToRad(curAngle), shiftX);
 
         curRayPoint = curRayPoint * curDist + player.getPosition();
-        curDist *= cos(curViewAngle);
+        segment[i + 1].position = curRayPoint;
+        curAngle += deltaAngle;
+    }
+}
+
+void Camera::show3DViewInWindow(RenderWindow& window, const Map& gameMap) const
+{
+    float curAngle = player.getRotation() - FOV / 2;
+    float deltaAngle = (float)FOV / circlePoints;
+
+    RectangleShape rectWall;
+    rectWall.setTexture(gameMap.getTexture());
+    for (size_t i = 0; i < circlePoints; ++i)
+    {
+        float shiftX = 0;
+        float curDist = calculateRayDist(gameMap, DegToRad(curAngle), shiftX);
+        curDist *= cos(DegToRad(deltaAngle * i - FOV / 2));
 
         int widthWall = window.getSize().x / circlePoints;
         int heightWall = std::min((int)(DIST_SCREEN / curDist * REAL_HEIGHT), (int)window.getSize().y);
@@ -143,10 +157,7 @@ void Camera::show3DViewInWindow(RenderWindow& window, Map& gameMap)
         Vector2i textureSize = (Vector2i)gameMap.getTexture()->getSize();
         rectWall.setTextureRect(Rect<int>({ (int)(textureSize.x * shiftX / gameMap.getWallSize().x), 0}, 
                                           { (int)(textureSize.x / circlePoints), textureSize.y}));
-
         window.draw(rectWall);
-
         curAngle += deltaAngle;
-        segment[i + 1].position = curRayPoint;
     }
 }
