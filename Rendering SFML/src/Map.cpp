@@ -2,7 +2,8 @@
 #include <iostream>
 #include <fstream>
 
-Map::Map(const std::string& filename, const Color& color_sq) : objects(), frame(), color(color_sq), scheme(), wallTexture()
+Map::Map(const std::string& filename) : 
+	objects(), frame(), color(swamp), scheme(), wallTexture()
 {
 	wallTexture.loadFromFile("resources/wall.png");
 	frame.setSize(Vector2f(SIZE_PIXEL_MAP, SIZE_PIXEL_MAP));
@@ -49,32 +50,32 @@ void Map::findObjects()
 	}
 }
 
-void Map::showObjectsInWindow(RenderWindow& window)
+void Map::showObjectsInWindow(RenderWindow& window) const
 {
 	for (auto& object : objects) window.draw(object);
 }
 
-Color& Map::getFillColor()
+const Color& Map::getFillColor() const
 {
 	return color;
 }
 
-Vector2f& Map::getMazeSize()
+const Vector2f& Map::getMazeSize() const
 {
 	return mazeSize;
 }
 
-Vector2f& Map::getWallSize()
+const Vector2f& Map::getWallSize() const
 {
 	return wallSize;
 }
 
-RectangleShape& Map::getFrame()
+const RectangleShape& Map::getFrame() const
 {
 	return frame;
 }
 
-Texture* Map::getTexture()
+const Texture* Map::getTexture() const
 {
 	return &wallTexture;
 }

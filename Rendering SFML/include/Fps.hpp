@@ -12,12 +12,12 @@ using namespace sf;
 class Fps
 {
 public:
-	Fps(std::string _font);
-	void update(unsigned int newFps);
-	void show(RenderWindow& window);
+	Fps(const std::string& textFont);
+	void update(const unsigned short newFps);
+	void show(RenderWindow& window) const;
 private:
 	Font font;
-	unsigned int curFps;
+	unsigned short curFps;
 };
 
 #endif 

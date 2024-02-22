@@ -20,8 +20,8 @@ const Color darkSwamp = { 23, 31, 9 };
 const std::string helvetica = "resources/Helvetica.ttf";
 
 float getDist2Points(const Vector2f& v1, const Vector2f& v2);
-float DegToRad(float angle);
-float RadToDeg(float angle);
-Color changeLightness(Color color, int delta);
+float DegToRad(const float angle);
+float RadToDeg(const float angle);
+Color changeLightness(const Color& color, const int delta);
 
 #endif 

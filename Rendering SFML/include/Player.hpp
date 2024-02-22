@@ -32,18 +32,18 @@ class Player
 {
 public:	
 	Player(const float radius, const Color& color);
-	void show(RenderWindow& window);
+	void show(RenderWindow& window) const;
 	void setPosition(const Vector2f& pos);
-	void updatePosition(float delta, Map& gameMap);
-	void rotate(float speed, RenderWindow& window);
-	float getRotation();
-	const Vector2f& getPosition();
+	void updatePosition(const Map& gameMap, const float delta);
+	void rotate(RenderWindow& window, const float speed);
+	float getRotation() const;
+	const Vector2f& getPosition() const;
 
 private:
 	float rotationAngle;
 	RectangleShape object;
 	std::unordered_map<Vector2i, float, Hash, Equal> mapDir;
-	void detectCollision(Vector2f& size, Map& gameMap);
+	void detectCollision(const Map& gameMap, Vector2f& delta);
 };
 
 #endif 
