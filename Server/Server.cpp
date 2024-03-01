@@ -1,4 +1,6 @@
+#define FD_SETSIZE (MAX_PLAYERS)
 #include "Server.h"
+
 
 void Server::LibStartUp()
 {
@@ -9,43 +11,46 @@ void Server::LibStartUp()
 	}
 }
 
-SOCKADDR_IN& Server::CreateAddr()
+SOCKADDR_IN Server::CreateAddr()
 {
-	SOCKADDR_IN* addr = new SOCKADDR_IN;
-	addr->sin_addr.s_addr = ip;
-	addr->sin_port = port;
-	addr->sin_family = AF_INET;
-	return *addr;
+	SOCKADDR_IN addr;
+	addr.sin_addr.s_addr = ip;
+	addr.sin_port = port;
+	addr.sin_family = AF_INET;
+	return addr;
 }
 
-void Server::CheckNewConnections(SOCKET& sock, SOCKADDR_IN* addr, Server::Arr<SOCKET, MAX_PLAYERS>& connections)
+void Server::CheckNewConnections(SOCKET& sock, SOCKADDR_IN* addr, FD_SET& connections)
 {
-	if (connections.size() == MAX_PLAYERS)
+	if (connections.fd_count >= MAX_PLAYERS)
 		return;
 	int sizeOfAddr = sizeof(*addr);
 	SOCKET newConnection = accept(sock, reinterpret_cast<SOCKADDR*>(addr), &sizeOfAddr);
 	if (newConnection != INVALID_SOCKET) {
 		std::cout << "New connection.\n";
-		char msg[] = "Hello, client!\n";
-		send(newConnection, msg, sizeof(msg), NULL);
-		for (auto it : connections) {
+		Player p(0, 0);
+		send(newConnection, reinterpret_cast<char*>(&p), sizeof(p), NULL);
+		for (int i = 0; i < connections.fd_count; ++i) {
 			char toOldsMsg[] = "Meet a new player!\n";
-			send(it, toOldsMsg, sizeof(toOldsMsg), NULL);
+			send(connections.fd_array[i], toOldsMsg, sizeof(toOldsMsg), NULL);
 		}
-		connections.push_back(newConnection);
+		FD_SET(newConnection, &connections);
 	}
-	else {
+	if (newConnection == INVALID_SOCKET) {
 		std::cout << "Connection error.\n";
 	}
 }
 
-//void Server::ReceiveData(SOCKET& sock, Server::Arr<SOCKET, MAX_PLAYERS>& connections)
-//{
-//	for (auto it : connections) {
-//		int buf[2];
-//		int res = recv(it, reinterpret_cast<char*>(buf), sizeof(buf), NULL);
-//		if (!res) {
-//			connections.erase(Server::Arr<SOCKET, MAX_PLAYERS>::const_iterator it);
-//		}
-//	}
-//}
+void Server::ReceiveData(SOCKET& sock, FD_SET& connections)
+{
+	for (int i = 0; i < connections.fd_count; ++i) {
+		Player buf;
+		int res = recv(connections.fd_array[i], reinterpret_cast<char*>(&buf), sizeof(buf), NULL);
+		if (res < 0) {
+			std::cout << "Element " << i << " has disconnected.\n";
+			for (int j = i; j < connections.fd_count - 1; ++j)
+				connections.fd_array[j] = connections.fd_array[j + 1];
+			--connections.fd_count;
+		}
+	}
+}

@@ -2,21 +2,18 @@
 
 int main() {
 	Server::LibStartUp();
-
-	SOCKADDR_IN& addr = Server::CreateAddr();
+	SOCKADDR_IN addr = Server::CreateAddr();
 
 	SOCKET sock = socket(AF_INET, SOCK_STREAM, NULL);
 	bind(sock, reinterpret_cast<SOCKADDR*>(&addr), sizeof(addr));
 	listen(sock, SOMAXCONN);
 
-	Server::Arr<SOCKET, MAX_PLAYERS> connections;
+	FD_SET connections = { 0 };
 	while (true) {
 		Server::CheckNewConnections(sock, &addr, connections);
-
-		//TODO: implement func to exchange info
+		Server::ReceiveData(sock, connections);
 	}
 
 	closesocket(sock);
-	delete (&addr);
 	WSACleanup();
 }

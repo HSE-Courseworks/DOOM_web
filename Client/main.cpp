@@ -3,7 +3,7 @@
 int main() {
 	Client::LibStartUp();
 
-	SOCKADDR_IN& addr = *(Client::CreateAddr());
+	SOCKADDR_IN addr = Client::CreateAddr();
 
 	SOCKET sock = socket(AF_INET, SOCK_STREAM, NULL);
 	bind(sock, reinterpret_cast<SOCKADDR*>(&addr), sizeof(addr));
@@ -12,13 +12,13 @@ int main() {
 		throw std::exception("Connection error.");
 		return -1;
 	}
-	
 	std::cout << "Connected.\n";
+
 	while (true) {
 		Client::CheckMessages(sock);
+		Client::SendData(sock);
 	}
 
 	closesocket(sock);
-	delete (&addr);
 	WSACleanup();
 }
