@@ -1,9 +1,15 @@
 #include "Player.hpp"
 
-Player::Player(const float size) : 
-    rotationAngle(0), mapDir()
+Player::Player(const Map& gameMap) : 
+    camera(), mapDir()
 {
-    object.width = size; object.height = size;
+    object.width = gameMap.getWallSize().x / 4; 
+    object.height = gameMap.getWallSize().x / 4;
+    object.x = gameMap.getFrame().x + gameMap.getWallSize().x * 3 / 2.0f;
+    object.y = gameMap.getFrame().y + gameMap.getWallSize().y * 3 / 2.0f;
+    camera.cameraPos.x = object.x + object.width / 2.0f;
+    camera.cameraPos.y = object.y + object.height / 2.0f;
+
     mapDir[{0, 0}] = 0.0f;
     mapDir[{1, 0}] = 0.0f;
     mapDir[{1, 1}] = M_PI / 4;
@@ -55,12 +61,13 @@ void Player::detectCollision(const Map& gameMap, Vector2& delta)
     }
     object.x += delta.x;
     object.y += delta.y;
+    camera.cameraPos.x += delta.x;
+    camera.cameraPos.y += delta.y;
 }
 
 void Player::updatePosition(const Map& gameMap, const float delta)
 {
-    float rotAngle = DegToRad(rotationAngle), speed = delta * KOEF_SPEED;
-
+    float rotAngle = DegToRad(camera.rotationAngle), speed = delta * KOEF_SPEED;
     std::vector<std::pair<bool, Vector2>> dir;
     dir.push_back({ IsKeyDown(KEY_W), {1, 0} });
     dir.push_back({ IsKeyDown(KEY_A), {0, 1} });
@@ -88,23 +95,17 @@ void Player::rotate(const float speed)
 {
     int rotateDist = GetMousePosition().x - GetRenderWidth() / 2.0f;
     SetMousePosition(GetRenderWidth() / 2, GetRenderHeight() / 2);
-    rotationAngle = rotationAngle + rotateDist * speed / SLOWDOWN;
+    camera.rotationAngle += rotateDist * speed / SLOWDOWN;
 }
 
 float Player::getRotation() const
 {
-	return rotationAngle;
-}
-
-void Player::setPosition(const Vector2& pos)
-{
-    object.x = pos.x - object.width / 2.0f;
-    object.y = pos.y - object.height / 2.0f;
+	return camera.rotationAngle;
 }
 
 const Vector2 Player::getPosition() const
 {
-    return {object.x + object.width / 2.0f, object.y + object.height / 2.0f};
+    return camera.cameraPos;
 }
 
 const Vector2 Player::getSize() const

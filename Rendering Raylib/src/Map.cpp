@@ -9,9 +9,10 @@ Map::Map(const char* filename) :
 	frame.width = SIZE_PIXEL_MAP; frame.height = SIZE_PIXEL_MAP;
 	frame.x = THICKNESS_MAP * 2; frame.y = THICKNESS_MAP * 2;
 
-	std::ifstream file(filename); std::string mazeLine;
-	while (std::getline(file, mazeLine)) 
+	std::ifstream file(filename, std::ios::in); std::string mazeLine;
+	while (!file.eof()) 
 	{
+		file >> mazeLine;
 		std::vector<bool> schemeLine(mazeLine.size());
 		for (size_t i = 0; i < mazeLine.size(); ++i) schemeLine[i] = mazeLine[i] == '#';
 		scheme.push_back(schemeLine);
@@ -43,7 +44,12 @@ void Map::findObjects()
 
 void Map::showFrame() const {
 	DrawRectangleRec(frame, swamp);
-	DrawRectangleLinesEx(frame, THICKNESS_MAP, BLACK);
+	Rectangle outline;
+	outline.width = frame.width + 2 * THICKNESS_MAP;
+	outline.height = frame.width + 2 * THICKNESS_MAP;
+	outline.x = frame.x - THICKNESS_MAP;
+	outline.y = frame.y - THICKNESS_MAP;
+	DrawRectangleLinesEx(outline, THICKNESS_MAP, BLACK);
 }
 
 void Map::showObjectsInWindow() const
