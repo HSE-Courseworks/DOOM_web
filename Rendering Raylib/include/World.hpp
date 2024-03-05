@@ -3,14 +3,14 @@
 
 #include "raylib.h"
 #include "Tools.hpp"
-#include "CameraPlayer.hpp"
+#include "Player.hpp"
 #include "Map.hpp"
 
 class World
 {
 public:
 	Map gameMap; 
-	CameraPlayer gameCamera;
+	Player player;
 	World(const char* filename);
 	void updateWorld(const float speed);
 	void showWorld() const;

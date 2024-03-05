@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include "Tools.hpp"
 #include "Map.hpp"
+#include "CameraPlayer.hpp"
 
 #define KOEF_SPEED (25)
 #define BLOCK (3)
@@ -29,10 +30,10 @@ struct Equal
 
 class Player
 {
-public:	
-	Player(const float radius);
+public:
+	CameraPlayer camera;	
+	Player(const Map& gameMap);
 	void show() const;
-	void setPosition(const Vector2& pos);
 	void updatePosition(const Map& gameMap, const float delta);
 	void rotate(const float speed);
 	float getRotation() const;
@@ -40,7 +41,6 @@ public:
 	const Vector2 getSize() const;
 
 private:
-	float rotationAngle;
 	Rectangle object;
 	std::unordered_map<Vector2, float, Hash, Equal> mapDir;
 	void detectCollision(const Map& gameMap, Vector2& delta);

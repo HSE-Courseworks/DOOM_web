@@ -1,19 +1,14 @@
 #include "CameraPlayer.hpp"
 #include <iostream>
 
-CameraPlayer::CameraPlayer(const Map& gameMap) : 
-    player(gameMap.getWallSize().x / 4), 
-    sightDist(SIZE_PIXEL_MAP),
-    FOV(VIEW_ANGLE), circlePoints(COUNT_POINTS)
+CameraPlayer::CameraPlayer() : 
+    sightDist(SIZE_PIXEL_MAP), rotationAngle(0),
+    FOV(VIEW_ANGLE), circlePoints(COUNT_POINTS), cameraPos()
 {
     segment = new Vector2[1 + circlePoints];
-
-    float startX = gameMap.getFrame().x + gameMap.getWallSize().x * 3 / 2.0f;
-    float startY = gameMap.getFrame().y + gameMap.getWallSize().y * 3 / 2.0f;
-    player.setPosition({startX, startY});
 }
 
-std::pair<float, Vector2> CameraPlayer::getIntersection(const Map& gameMap, Vector2& p, const Vector2& dp, const Vector2& cameraPos) const
+rayInfo CameraPlayer::getIntersection(const Map& gameMap, Vector2& p, const Vector2& dp) const
 {
     float dist = sightDist; int total = gameMap.getMazeSize().x, mapX = 0, mapY = 0;
     for (int cnt = 0; cnt < total; ++cnt)
@@ -37,11 +32,9 @@ std::pair<float, Vector2> CameraPlayer::getIntersection(const Map& gameMap, Vect
 float CameraPlayer::calculateRayDist(const Map& gameMap, const float angle, float& shiftX) const
 {
     float pointX = 0, pointY = 0, x0 = 0, y0 = 0;
-    Vector2 cameraPos = player.getPosition();
-
 ////////////////////////////////////////////////////////// Check HORIZONTAL lines //////////////////////////////////////////////////////////
     float ctgAngle = 1 / tan(angle); bool checkH = true;
-    std::pair<float, Vector2> resultHor = { sightDist, {0, 0} };
+    rayInfo resultHor = { sightDist, {0, 0} };
 
     if (sin(angle) > LIMIT)                     // Looking DOWN
     {
@@ -67,12 +60,12 @@ float CameraPlayer::calculateRayDist(const Map& gameMap, const float angle, floa
     }
 
     Vector2 pointH = { pointX, pointY };
-    if (checkH) resultHor = getIntersection(gameMap, pointH, {x0, y0}, cameraPos);
+    if (checkH) resultHor = getIntersection(gameMap, pointH, {x0, y0});
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////// Check VERTICAL lines ////////////////////////////////////////////////////////////
     float tanAngle = tan(angle); bool checkV = true;
-    std::pair<float, Vector2> resultVert = { sightDist, {0, 0} };
+    rayInfo resultVert = { sightDist, {0, 0} };
 
     if (cos(angle) < -LIMIT)                     // Looking LEFT
     {
@@ -98,7 +91,7 @@ float CameraPlayer::calculateRayDist(const Map& gameMap, const float angle, floa
     }
 
     Vector2 pointV = { pointX, pointY };
-    if (checkV) resultVert = getIntersection(gameMap, pointV, {x0, y0}, cameraPos);
+    if (checkV) resultVert = getIntersection(gameMap, pointV, {x0, y0});
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     if (resultHor.first < resultVert.first)
@@ -112,15 +105,15 @@ float CameraPlayer::calculateRayDist(const Map& gameMap, const float angle, floa
 void CameraPlayer::show2DViewInWindow() const 
 {
     for (int i = 0; i <= circlePoints; ++i) {
-        DrawLineEx(player.getPosition(), segment[i], 1, semiTransparentWhite);
+        DrawLineEx(cameraPos, segment[i], 1, semiTransparentWhite);
     }
 }
 
 void CameraPlayer::updateSegment(const Map& gameMap)
 {
     const int FIRST = 0;
-    segment[FIRST] = player.getPosition();
-    float curAngle = player.getRotation() - FOV / 2;
+    segment[FIRST] = cameraPos;
+    float curAngle = rotationAngle - FOV / 2;
     float deltaAngle = (float)FOV / circlePoints;
 
     for (int i = 0; i < circlePoints; ++i)
@@ -132,8 +125,8 @@ void CameraPlayer::updateSegment(const Map& gameMap)
         float shiftX = 0;
         float curDist = calculateRayDist(gameMap, DegToRad(curAngle), shiftX);
 
-        curRayPoint.x = curRayPoint.x * curDist + player.getPosition().x;
-        curRayPoint.y = curRayPoint.y * curDist + player.getPosition().y;
+        curRayPoint.x = curRayPoint.x * curDist + cameraPos.x;
+        curRayPoint.y = curRayPoint.y * curDist + cameraPos.y;
         segment[i + 1] = curRayPoint;
         curAngle += deltaAngle;
     }
@@ -141,7 +134,7 @@ void CameraPlayer::updateSegment(const Map& gameMap)
 
 void CameraPlayer::show3DViewInWindow(const Map& gameMap) const
 {
-    float curAngle = player.getRotation() - FOV / 2;
+    float curAngle = rotationAngle - FOV / 2;
     float deltaAngle = (float)FOV / circlePoints;
 
     Rectangle wall; Rectangle crop;

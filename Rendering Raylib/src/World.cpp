@@ -2,7 +2,7 @@
 
 World::World(const char* filename) : 
 	gameMap(filename),
-	gameCamera(gameMap), 
+	player(gameMap), 
 	miniMap(true)
 {
 	gameMap.findObjects();
@@ -14,20 +14,20 @@ World::World(const char* filename) :
 
 void World::updateWorld(const float speed) 
 {
-	gameCamera.player.updatePosition(gameMap, speed);
-	gameCamera.player.rotate(speed);
-	gameCamera.updateSegment(gameMap);
+	player.updatePosition(gameMap, speed);
+	player.rotate(speed);
+	player.camera.updateSegment(gameMap);
 }
 
 void World::showWorld() const
 {
 	DrawRectangleRec(floor, swamp);
-	gameCamera.show3DViewInWindow(gameMap);
+	player.camera.show3DViewInWindow(gameMap);
 	if (miniMap)
 	{
 		gameMap.showFrame();
-		gameCamera.show2DViewInWindow();
-		gameCamera.player.show();
+		player.camera.show2DViewInWindow();
+		player.show();
 		gameMap.showObjectsInWindow();
 	}
 }
