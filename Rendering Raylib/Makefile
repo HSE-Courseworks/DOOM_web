@@ -74,7 +74,7 @@ LDFLAGS = -L. -L$(RAYLIB_RELEASE_PATH) -L$(RAYLIB_PATH)/src
 LDLIBS = -lraylib -lopengl32 -lgdi32 -lwinmm
 
 ifeq ($(PLATFORM),PLATFORM_WEB)
-    LDLIBS = $(RAYLIB_RELEASE_PATH)/libraylib.a
+    LDLIBS = $(RAYLIB_RELEASE_PATH)/web/libraylib.a
 endif
 
 SRC_DIR = src
