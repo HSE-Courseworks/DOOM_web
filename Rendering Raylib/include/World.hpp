@@ -1,6 +1,8 @@
 #ifndef WORLD_HPP
 #define WORLD_HPP
 
+#define MAX_PLAYERS (10)
+
 #include "raylib.h"
 #include "Tools.hpp"
 #include "Map.hpp"
@@ -20,7 +22,9 @@ public:
 
 private:
     int curIdPlayer;
+    Font fontLog;
     Rectangle floor;
+    std::set<int> free_slots;
 };
 
 #endif 

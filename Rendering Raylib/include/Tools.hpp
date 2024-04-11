@@ -24,6 +24,7 @@ const Color grass = { 17, 107, 32, 255 };
 const Color darkGrass = { 4, 54, 15, 255 };
 const Color darkBrown = { 59, 33, 3, 255 };
 const Color softYellow = { 174, 194, 45, 255 }; 
+const Color tintText = {210, 184, 245, 255};
 
 float getDist2Points(const Vector2& v1, const Vector2& v2);
 float DegToRad(const float angle);

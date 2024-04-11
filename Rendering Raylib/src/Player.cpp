@@ -2,11 +2,14 @@
 #include <unordered_set>
 
 Player::Player(const Vector2& size, const Vector2& pos, const float angle, const Color& _color, 
-               const std::string& texture) : 
+               const std::string& texture, const std::string& crosshair_path) : 
     color(_color), sightDist(SIZE_PIXEL_MAP), rotationAngle(angle),
-    FOV(VIEW_ANGLE), circlePoints(COUNT_POINTS), segment(COUNT_POINTS), drawInfo(), miniMap(true)
+    FOV(VIEW_ANGLE), circlePoints(COUNT_POINTS), segment(COUNT_POINTS), drawInfo()
 {
     texturePlayer = LoadTexture(texture.data());
+    Image crosshair_img = LoadImage(crosshair_path.data());
+    ImageResize(&crosshair_img, crosshair_img.width / 10, crosshair_img.height / 10);
+    crosshair = LoadTextureFromImage(crosshair_img);
     object.width = size.x; object.height = size.y;
     object.x = pos.x; object.y = pos.y;
     cameraPos.x = object.x;
@@ -20,6 +23,11 @@ Player::Player(const Vector2& size, const Vector2& pos, const float angle, const
     mapDir[{-1, 1}] = 3 * M_PI / 4; mapDir[{-1, 0}] = M_PI;
     mapDir[{-1, -1}] = 5 * M_PI / 4; mapDir[{0, -1}] = 3 * M_PI / 2;
     mapDir[{1, -1}] = 7 * M_PI / 4;
+}
+
+void Player::drawCrosshair() const
+{
+    DrawTexture(crosshair, GetRenderWidth() / 2 - crosshair.width / 2, GetRenderHeight() / 2 - crosshair.height / 2, WHITE);
 }
 
 void Player::show() const
@@ -132,6 +140,83 @@ void Player::setFlagMiniMap(bool flag)
 bool Player::getFlagMiniMap() const
 {
 	return miniMap;
+}
+
+void Player::setFlagShowLog(bool flag)
+{
+    isLogEnabled = flag;
+}
+
+bool Player::getFlagShowLog() const
+{
+    return isLogEnabled;
+}
+
+void Player::setId(int _id)
+{
+    id = _id;
+}
+int Player::getId() const
+{
+    return id;
+}
+
+std::unordered_set<int> Player::getSeenPlayers(DrawInfo3D& centerObject) const  //получить id всех замеченных игроков
+{
+    std::unordered_set<int> seenPlayers;
+    bool isChosen = false;
+    for (const auto& objInfo : drawInfo)
+    {
+        int _id = std::get<RAY_INFO::ID>(objInfo);
+        if (_id && !seenPlayers.contains(_id))
+            seenPlayers.insert(_id);
+        if (!isChosen && std::get<RAY_INFO::NUM_RAY>(objInfo) == 319)
+        {
+            centerObject = objInfo;
+            isChosen = true;
+        }
+    }
+    return seenPlayers;
+}
+
+void Player::showLog(const Font& fontLog) const
+{
+    // текущий игрок (номер)
+    // текущая позиция игрока (x, y)
+    // его угол обзора
+    // направление обзора
+    // замечен или не замечен противник
+
+    DrawTextEx(fontLog, ("Current player: " + std::to_string(id)).c_str(), {LOG_SHIFT_X, LOG_SHIFT_Y}, LOG_FONT_SIZE, 0, tintText);
+    DrawTextEx(fontLog, ("Current position: (" + std::to_string(cameraPos.x) + ", " + std::to_string(cameraPos.y) + ")").c_str(), 
+    {LOG_SHIFT_X, LOG_SHIFT_Y + LOG_FONT_SIZE}, LOG_FONT_SIZE, 0, tintText);
+    DrawTextEx(fontLog, ("Current angle of view: " + std::to_string(constrainAngle360(rotationAngle))).c_str(), 
+    {LOG_SHIFT_X, LOG_SHIFT_Y + 2 * LOG_FONT_SIZE}, LOG_FONT_SIZE, 0, tintText);
+    DrawTextEx(fontLog, ("Current direction of view: " + std::to_string(int(constrainAngle360(rotationAngle)) / 90 + 1) + " quarter").c_str(), 
+    {LOG_SHIFT_X, LOG_SHIFT_Y + 3 * LOG_FONT_SIZE}, LOG_FONT_SIZE, 0, tintText);
+    DrawTextEx(fontLog, ("Field of view: " + std::to_string(FOV)).c_str(), 
+    {LOG_SHIFT_X, LOG_SHIFT_Y + 4 * LOG_FONT_SIZE}, LOG_FONT_SIZE, 0, tintText);
+
+    DrawInfo3D centerObject;
+    std::unordered_set<int> seenPlayers = getSeenPlayers(centerObject);
+    std::string strSeenPlayers;
+    for (int _id : seenPlayers)
+        strSeenPlayers += " " + std::to_string(_id);
+    
+    if (seenPlayers.empty())
+        DrawTextEx(fontLog, "Detected players ID's: None", {LOG_SHIFT_X, LOG_SHIFT_Y + 5 * LOG_FONT_SIZE}, LOG_FONT_SIZE, 0, tintText);
+    else
+        DrawTextEx(fontLog, ("Detected players ID's:" + strSeenPlayers).c_str(),
+         {LOG_SHIFT_X, LOG_SHIFT_Y + 5 * LOG_FONT_SIZE}, LOG_FONT_SIZE, 0, tintText);
+
+    float distToObj; float sizeObj; int idObj;
+    std::tie(distToObj, std::ignore, std::ignore, std::ignore, sizeObj, idObj) = centerObject;
+    std::string obj = (idObj == 0 ? "WALL" : ("PLAYER, ID: " + std::to_string(idObj)));
+
+    DrawTextEx(fontLog, ("Information about direct object:\n\n\t Seen: " + obj + 
+        "\n\n\t Distance: " + std::to_string(distToObj) + "\n\n\t Object size: " + std::to_string(sizeObj)).c_str(), 
+        {LOG_SHIFT_X, LOG_SHIFT_Y + 6 * LOG_FONT_SIZE}, LOG_FONT_SIZE, 0, tintText);
+    
 }
 
 RayInfo Player::getIntersection(const Map& gameMap, Vector2& p, const Vector2& dp) const
@@ -342,7 +427,7 @@ void Player::show3DViewInWindow() const
     Rectangle wall; Rectangle crop;
     for (auto iter = drawInfo.rbegin(); iter != drawInfo.rend(); ++iter)
     {
-        float curDist, shiftX, spriteSize; int j; const Texture2D* sprite; bool isPlayer;
+        float curDist, shiftX, spriteSize; int j; const Texture2D* sprite; int isPlayer;
         std::tie(curDist, shiftX, j, sprite, spriteSize, isPlayer) = *iter;
 
         int widthWall = GetRenderWidth() / circlePoints;
@@ -389,7 +474,7 @@ void Player::calcRayDistPlayers(const std::vector<Player*>& opponents)
         }
         if (std::fabs(sightDist - curDist) > 1e-9) {
             curDist *= cos(DegToRad(deltaAngle * i - FOV / 2));
-            drawInfo.push_back(std::make_tuple(curDist, shiftX, i, &opponents[chosen]->texturePlayer, sizePlayer, true));
+            drawInfo.push_back(std::make_tuple(curDist, shiftX, i, &opponents[chosen]->texturePlayer, sizePlayer, opponents[chosen]->id));
         }
         curAngle += deltaAngle;
     }
@@ -408,7 +493,7 @@ void Player::calcRayDistEnv(const Map& gameMap)
         cur.first *= cos(DegToRad(deltaAngle * i - FOV / 2));
         char type = gameMap.scheme[cur.second.x][cur.second.y];
 
-        drawInfo.push_back(std::make_tuple(cur.first, shiftX, i, gameMap.getTexture(type), sizeWall, false));
+        drawInfo.push_back(std::make_tuple(cur.first, shiftX, i, gameMap.getTexture(type), sizeWall, 0));
         curAngle += deltaAngle;
     }
 }
