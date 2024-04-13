@@ -1,14 +1,15 @@
 #include "Fps.hpp"
 
-Fps::Fps(const char* textFont) : font()
+Fps::Fps() : font() {}
+Fps::Fps(const std::string& textFont) : font()
 {
-	font = LoadFont(textFont);
+	font = LoadFont(textFont.data());
 }
 
 void Fps::show() const
 {
 	const char *textFps = TextFormat("%i FPS", GetFPS());
 	Vector2 bounds = MeasureTextEx(font, textFps, FONT_SIZE, SPACING);
-	Vector2 posFPS = {GetRenderWidth() - SHIFT - bounds.x, SHIFT};
-	DrawTextEx(font, textFps, posFPS, FONT_SIZE, SPACING, BLACK);
+	Vector2 posFPS = {GetRenderWidth() - SHIFT_X - bounds.x, SHIFT_Y};
+	DrawTextEx(font, textFps, posFPS, FONT_SIZE, SPACING, tintText);
 }

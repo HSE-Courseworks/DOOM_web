@@ -1,0 +1,3 @@
+# resources/brown_stone.png 82 45 27 255
+1 resources/stone.png 79 80 82 255 
+2 resources/bright_fence.png 130 73 25 255
