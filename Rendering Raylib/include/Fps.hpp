@@ -7,14 +7,13 @@
 
 #define FONT_SIZE (25)
 #define SPACING (2)
-#define SHIFT_X (15)
-#define SHIFT_Y (20)
+#define SHIFT_X (10)
+#define SHIFT_Y (10)
 
 class Fps
 {
 public:
 	Fps();
-	Fps(const std::string& textFont);
 	void show() const;
 private:
 	Font font;

@@ -1,22 +1,20 @@
 #include "Player.hpp"
-#include <unordered_set>
+#include <fstream>
 
-Player::Player(const Vector2& size, const Vector2& pos, const float angle, const Color& _color, 
-               const std::string& texture, const std::string& crosshair_path) : 
-    color(_color), sightDist(SIZE_PIXEL_MAP), rotationAngle(angle),
+Player::Player(const Vector2& size, const Vector2& pos, const float angle, const Color& color, const std::string& texture) : 
+    color(color), sightDist(SIZE_PIXEL_MAP * 3), rotationAngle(angle),
     FOV(VIEW_ANGLE), circlePoints(COUNT_POINTS), segment(COUNT_POINTS), drawInfo()
 {
-    texturePlayer = LoadTexture(texture.data());
-    Image crosshair_img = LoadImage(crosshair_path.data());
-    ImageResize(&crosshair_img, crosshair_img.width / 10, crosshair_img.height / 10);
-    crosshair = LoadTextureFromImage(crosshair_img);
-    object.width = size.x; object.height = size.y;
-    object.x = pos.x; object.y = pos.y;
-    cameraPos.x = object.x;
-    cameraPos.y = object.y;
-    object.x -= object.width / 2.0f;
-    object.y -= object.height / 2.0f;
+    texturePlayer = LoadTexture(texture.c_str());
+    fontLog = LoadFontEx("resources/Calibri.ttf", LOG_FONT_SIZE, nullptr, 0);
 
+    object.width = size.x; object.height = size.y;
+    cameraPos.x = pos.x;
+    cameraPos.y = pos.y; 
+    object.x = pos.x - object.width / 2.0f;
+    object.y = pos.y - object.height / 2.0f;
+    mapShiftX = pos.x - THICKNESS_MAP * 2;
+    mapShiftY = pos.y - THICKNESS_MAP * 2;
 
     mapDir[{0, 0}] = 0.0f; mapDir[{1, 0}] = 0.0f;
     mapDir[{1, 1}] = M_PI / 4; mapDir[{0, 1}] = M_PI / 2;
@@ -25,15 +23,18 @@ Player::Player(const Vector2& size, const Vector2& pos, const float angle, const
     mapDir[{1, -1}] = 7 * M_PI / 4;
 }
 
-void Player::drawCrosshair() const
+void Player::showScope() const
 {
-    DrawTexture(crosshair, GetRenderWidth() / 2 - crosshair.width / 2, GetRenderHeight() / 2 - crosshair.height / 2, WHITE);
+    DrawCircle(GetRenderWidth() / 2.0f, GetRenderHeight() / 2.0f, RADIUS_SCOPE, darkGray);
+    DrawCircle(GetRenderWidth() / 2.0f, GetRenderHeight() / 2.0f, RADIUS_SCOPE / 2.0f, RED);
 }
 
-void Player::show() const
+void Player::show(const Vector2& shift) const
 {
-    DrawRectangleRec(object, BLACK);
-    DrawRectangleLinesEx(object, 1, color);
+    Rectangle fake = object;
+    fake.x += shift.x; fake.y += shift.y;
+    DrawRectangleRec(fake, color);
+    // DrawRectangleLinesEx(fake, 1, color);
 }
 
 void Player::detectCollision(const std::vector<const Rectangle*>& objects, Vector2& delta)
@@ -72,9 +73,11 @@ void Player::detectCollision(const std::vector<const Rectangle*>& objects, Vecto
     object.y += delta.y;
     cameraPos.x += delta.x;
     cameraPos.y += delta.y;
+    mapShiftX += delta.x;
+    mapShiftY += delta.y;
 }
 
-void Player::updatePosition(const Map& gameMap, const std::vector<Player>& players, const float delta)
+void Player::updatePosition(const Map& gameMap, const std::unordered_map<int, Player>& players, const float delta)
 {
     float rotAngle = DegToRad(rotationAngle), speed = delta * KOEF_SPEED;
     std::vector<std::pair<bool, Vector2>> dir;
@@ -103,9 +106,9 @@ void Player::updatePosition(const Map& gameMap, const std::vector<Player>& playe
     for (size_t i = 0; i < gameMap.objects.size(); ++i) {
         objects.push_back(&gameMap.objects[i].first);
     }
-    for (size_t i = 0; i < players.size(); ++i) {
-        if (&players[i] == this) continue;
-        objects.push_back(&players[i].object);
+    for (auto& [id, player] : players) {
+        if (player.id == this->id) continue;
+        objects.push_back(&player.object);
     }
     detectCollision(objects, deltaPos);
 }
@@ -152,25 +155,26 @@ bool Player::getFlagShowLog() const
     return isLogEnabled;
 }
 
-void Player::setId(int _id)
+void Player::setId(int id)
 {
-    id = _id;
+    this->id = id;
 }
+
 int Player::getId() const
 {
     return id;
 }
 
-std::unordered_set<int> Player::getSeenPlayers(DrawInfo3D& centerObject) const  //получить id всех замеченных игроков
+// Получить id всех замеченных игроков в радиусе обзора (даже через стенки)
+std::unordered_set<int> Player::getSeenPlayers(DrawInfo3D& centerObject) const 
 {
     std::unordered_set<int> seenPlayers;
     bool isChosen = false;
     for (const auto& objInfo : drawInfo)
     {
-        int _id = std::get<RAY_INFO::ID>(objInfo);
-        if (_id && !seenPlayers.contains(_id))
-            seenPlayers.insert(_id);
-        if (!isChosen && std::get<RAY_INFO::NUM_RAY>(objInfo) == 319)
+        int curId = std::get<RAY_INFO::ID>(objInfo);
+        if (curId && !seenPlayers.contains(curId)) seenPlayers.insert(curId);
+        if (!isChosen && std::get<RAY_INFO::NUM_RAY>(objInfo) == circlePoints / 2)
         {
             centerObject = objInfo;
             isChosen = true;
@@ -179,29 +183,35 @@ std::unordered_set<int> Player::getSeenPlayers(DrawInfo3D& centerObject) const  
     return seenPlayers;
 }
 
-void Player::showLog(const Font& fontLog) const
+void Player::showLog() const
 {
-    // текущий игрок (номер)
-    // текущая позиция игрока (x, y)
-    // его угол обзора
-    // направление обзора
-    // замечен или не замечен противник
+    // Текущий игрок (идентификатор)
+    // Текущая позиция игрока (x, y)
+    // Угол обзора игрока
+    // Направление обзора (четверть)
+    // Замечен или не замечен противник
 
-    DrawTextEx(fontLog, ("Current player: " + std::to_string(id)).c_str(), {LOG_SHIFT_X, LOG_SHIFT_Y}, LOG_FONT_SIZE, 0, tintText);
-    DrawTextEx(fontLog, ("Current position: (" + std::to_string(cameraPos.x) + ", " + std::to_string(cameraPos.y) + ")").c_str(), 
-    {LOG_SHIFT_X, LOG_SHIFT_Y + LOG_FONT_SIZE}, LOG_FONT_SIZE, 0, tintText);
-    DrawTextEx(fontLog, ("Current angle of view: " + std::to_string(constrainAngle360(rotationAngle))).c_str(), 
-    {LOG_SHIFT_X, LOG_SHIFT_Y + 2 * LOG_FONT_SIZE}, LOG_FONT_SIZE, 0, tintText);
-    DrawTextEx(fontLog, ("Current direction of view: " + std::to_string(int(constrainAngle360(rotationAngle)) / 90 + 1) + " quarter").c_str(), 
-    {LOG_SHIFT_X, LOG_SHIFT_Y + 3 * LOG_FONT_SIZE}, LOG_FONT_SIZE, 0, tintText);
-    DrawTextEx(fontLog, ("Field of view: " + std::to_string(FOV)).c_str(), 
-    {LOG_SHIFT_X, LOG_SHIFT_Y + 4 * LOG_FONT_SIZE}, LOG_FONT_SIZE, 0, tintText);
+    std::stringstream stream;
+    DrawRectangle(LOG_SHIFT_X - 5, LOG_SHIFT_Y - 5, LOG_FRAME_WIDTH, LOG_FRAME_HEIGHT, softGray);
+    stream << "Current player ID: " << id;
+    DrawTextEx(fontLog, stream.str().c_str(), {LOG_SHIFT_X, LOG_SHIFT_Y}, LOG_FONT_SIZE, 0, tintText);
+    stream.str(std::string());
+    stream << "Current position: (" << cameraPos.x - 2 * THICKNESS_MAP << ", " << cameraPos.y - 2 * THICKNESS_MAP << ")";
+    DrawTextEx(fontLog, stream.str().c_str(), {LOG_SHIFT_X, LOG_SHIFT_Y + LOG_FONT_SIZE}, LOG_FONT_SIZE, 0, tintText);
+    stream.str(std::string());
+    stream << "Current angle of view: " << constrainAngle360(rotationAngle);
+    DrawTextEx(fontLog, stream.str().c_str(), {LOG_SHIFT_X, LOG_SHIFT_Y + 2 * LOG_FONT_SIZE}, LOG_FONT_SIZE, 0, tintText);
+    stream.str(std::string());
+    stream << "Current direction of view: " << int(constrainAngle360(rotationAngle) / 90) + 1 << " quarter";
+    DrawTextEx(fontLog, stream.str().c_str(), {LOG_SHIFT_X, LOG_SHIFT_Y + 3 * LOG_FONT_SIZE}, LOG_FONT_SIZE, 0, tintText);
+    stream.str(std::string());
+    stream << "Field of view: " << FOV;
+    DrawTextEx(fontLog, stream.str().c_str(), {LOG_SHIFT_X, LOG_SHIFT_Y + 4 * LOG_FONT_SIZE}, LOG_FONT_SIZE, 0, tintText);
 
     DrawInfo3D centerObject;
     std::unordered_set<int> seenPlayers = getSeenPlayers(centerObject);
     std::string strSeenPlayers;
-    for (int _id : seenPlayers)
-        strSeenPlayers += " " + std::to_string(_id);
+    for (int curId : seenPlayers) strSeenPlayers += " " + std::to_string(curId);
     
     if (seenPlayers.empty())
         DrawTextEx(fontLog, "Detected players ID's: None", {LOG_SHIFT_X, LOG_SHIFT_Y + 5 * LOG_FONT_SIZE}, LOG_FONT_SIZE, 0, tintText);
@@ -209,19 +219,19 @@ void Player::showLog(const Font& fontLog) const
         DrawTextEx(fontLog, ("Detected players ID's:" + strSeenPlayers).c_str(),
          {LOG_SHIFT_X, LOG_SHIFT_Y + 5 * LOG_FONT_SIZE}, LOG_FONT_SIZE, 0, tintText);
 
-    float distToObj; float sizeObj; int idObj;
+    float distToObj, sizeObj; int idObj;
     std::tie(distToObj, std::ignore, std::ignore, std::ignore, sizeObj, idObj) = centerObject;
     std::string obj = (idObj == 0 ? "WALL" : ("PLAYER, ID: " + std::to_string(idObj)));
 
-    DrawTextEx(fontLog, ("Information about direct object:\n\n\t Seen: " + obj + 
-        "\n\n\t Distance: " + std::to_string(distToObj) + "\n\n\t Object size: " + std::to_string(sizeObj)).c_str(), 
-        {LOG_SHIFT_X, LOG_SHIFT_Y + 6 * LOG_FONT_SIZE}, LOG_FONT_SIZE, 0, tintText);
-    
+    stream.str(std::string());
+    stream << "Information about direct object:\n\n\t Seen: " << obj << "\n\n\t Distance: " 
+           << distToObj << "\n\n\t Object size: " << sizeObj;
+    DrawTextEx(fontLog, stream.str().c_str(), {LOG_SHIFT_X, LOG_SHIFT_Y + 6 * LOG_FONT_SIZE}, LOG_FONT_SIZE, 0, tintText);
 }
 
 RayInfo Player::getIntersection(const Map& gameMap, Vector2& p, const Vector2& dp) const
 {
-    float dist = sightDist; int total = gameMap.getMazeSize().x, mapX = 0, mapY = 0;
+    int total = gameMap.getMazeSize().x, mapX = 0, mapY = 0;
     for (int cnt = 0; cnt < total; ++cnt)
     {
         mapX = (p.y - gameMap.getFrame().y) / gameMap.getWallSize().y;
@@ -230,14 +240,13 @@ RayInfo Player::getIntersection(const Map& gameMap, Vector2& p, const Vector2& d
         if (mapX >= 0 && mapX < gameMap.getMazeSize().x && mapY >= 0 &&
             mapY < gameMap.getMazeSize().y && gameMap.scheme[mapX][mapY] != '.')
         {
-            dist = getDist2Points(cameraPos, p);
+            return { getDist2Points(cameraPos, p), {(float)mapX, (float)mapY} };
             break;
         }
         p.x += dp.x;
         p.y += dp.y;
     }
-    Vector2 mapPos = { (float)mapX, (float)mapY };
-    return { dist, mapPos };
+    return { sightDist, {-1, -1} };
 }
 
 RayInfo Player::getRayDistEnv(const Map& gameMap, const float angle, float& shiftX) const
@@ -321,7 +330,7 @@ RayInfo Player::getRayDistEnv(const Map& gameMap, const float angle, float& shif
     return std::make_pair(std::min(resultHor.first, resultVert.first), mapCell);
 }
 
-Vector2 Player::getCrossPoint(const int& numberSide, const std::vector<Vector2>& points, const float& k, const float& b) const 
+Vector2 Player::getCrossPoint(const int& numberSide, const std::vector<Vector2>& points, const float k, const float b) const 
 {  
     Vector2 crossPoint = {1e10, 1e10};
     // Вертикальная стенка игрока  
@@ -383,11 +392,15 @@ float Player::getRayDistPlayer(const Player* player, const float& k, const float
     return resultDist;
 }
 
-void Player::show2DViewInWindow() const 
+void Player::show2DViewInWindow(const Vector2& shift) const 
 {
-    Color curColor = color; curColor.a = TRANSPARENCY;
-    for (int i = 0; i <= circlePoints; ++i) {
-        DrawLineEx(cameraPos, segment[i], 1, curColor);
+    Color curColor = lightGray; curColor.a = TRANSPARENCY;
+    Vector2 pos = { cameraPos.x + shift.x, cameraPos.y + shift.y };
+    for (int i = 0; i < circlePoints; ++i) {
+        Vector2 curPoint = segment[i];
+        curPoint.x += shift.x;
+        curPoint.y += shift.y;
+        DrawLineEx(pos, curPoint, 1, curColor);
     }
 }
 
@@ -399,6 +412,7 @@ void Player::updateSegment()
 
     float deltaAngle = (float)FOV / circlePoints;
     std::unordered_set<int> setRays;
+
     for (auto iter = drawInfo.begin(); iter != drawInfo.end(); ++iter) 
     {
         int j = std::get<RAY_INFO::NUM_RAY>(*iter); 
@@ -409,6 +423,7 @@ void Player::updateSegment()
         float curAngle = rotationAngle - FOV / 2 + j * deltaAngle;
 
         Vector2 curRayPoint;
+        curDist = std::min(curDist, SIZE_PIXEL_MAP / 2.0f);
         curRayPoint.x = cos(DegToRad(curAngle)) * curDist + cameraPos.x;
         curRayPoint.y = sin(DegToRad(curAngle)) * curDist + cameraPos.y;
         segment[j] = curRayPoint;
@@ -431,12 +446,12 @@ void Player::show3DViewInWindow() const
         std::tie(curDist, shiftX, j, sprite, spriteSize, isPlayer) = *iter;
 
         int widthWall = GetRenderWidth() / circlePoints;
-        int realHeight = isPlayer ? REAL_HEIGHT / 2 : REAL_HEIGHT;
+        int realHeight = isPlayer ? REAL_HEIGHT_PLAYER : REAL_HEIGHT_WALL;
         int heightWall = (int)(DIST_SCREEN / curDist * realHeight);
 
         wall.width = widthWall; wall.height = heightWall;
         wall.x = j * widthWall;
-        wall.y = isPlayer ? (GetRenderHeight() / 2) : (GetRenderHeight() - heightWall) / 2 ;
+        wall.y = isPlayer ? (GetRenderHeight() / 2.0f - heightWall / 3.0f) : (GetRenderHeight() - heightWall) / 2.0f;
 
         crop.x = (int)(sprite->width * shiftX / spriteSize);
         crop.y = 0;
@@ -491,8 +506,8 @@ void Player::calcRayDistEnv(const Map& gameMap)
         float shiftX = 0;
         RayInfo cur = getRayDistEnv(gameMap, DegToRad(curAngle), shiftX);
         cur.first *= cos(DegToRad(deltaAngle * i - FOV / 2));
-        char type = gameMap.scheme[cur.second.x][cur.second.y];
 
+        char type = gameMap.scheme[cur.second.x][cur.second.y];
         drawInfo.push_back(std::make_tuple(cur.first, shiftX, i, gameMap.getTexture(type), sizeWall, 0));
         curAngle += deltaAngle;
     }
