@@ -2,11 +2,16 @@
 #include <fstream>
 
 Player::Player(const Vector2& size, const Vector2& pos, const float angle, const Color& color, const std::string& texture) : 
-    color(color), sightDist(SIZE_PIXEL_MAP * 3), rotationAngle(angle),
+    gun("resources/guns/glock", 200, 20, 200, 10), color(color), sightDist(SIZE_PIXEL_MAP * 3), rotationAngle(angle),
     FOV(VIEW_ANGLE), circlePoints(COUNT_POINTS), segment(COUNT_POINTS), drawInfo()
 {
     texturePlayer = LoadTexture(texture.c_str());
-    fontLog = LoadFontEx("resources/Calibri.ttf", LOG_FONT_SIZE, nullptr, 0);
+
+    healthTexture = LoadTexture("resources/health.png");
+	font = LoadFontEx("resources/Calibri.ttf", 30, nullptr, 0);
+    bgHealth = {HEALTH_X, HEALTH_Y, (float)healthTexture.width + 2 * THICKNESS_FRAME, 
+                (float)healthTexture.height + 2 * THICKNESS_FRAME};
+    soundInjury = LoadSound("resources/injury.mp3");
 
     object.width = size.x; object.height = size.y;
     cameraPos.x = pos.x;
@@ -165,20 +170,64 @@ int Player::getId() const
     return id;
 }
 
+float Player::getMapShiftX() const 
+{
+    return mapShiftX;
+}
+
+float Player::getMapShiftY() const
+{
+    return mapShiftY;
+}
+
+const Weapon& Player::getGun() const 
+{
+    return gun;
+}
+
+Weapon& Player::getGun()
+{
+    return gun;
+}
+
+std::pair<float, int> Player::getInfoCenterObject() const
+{
+    return std::make_pair(std::get<RAY_INFO::DIST>(centerObj), std::get<RAY_INFO::ID>(centerObj));
+}
+
+void Player::takeDamage(int damage)
+{
+    hp = std::max(hp - damage, 0);
+    SetSoundVolume(soundInjury, VOLUME);
+    PlaySound(soundInjury);
+    if (!hp) 
+    {
+        // Дописать смерть игрока
+    }
+}
+
+void Player::showHealth() const
+{
+    DrawRectangleRec(bgHealth, softRed);
+    DrawRectangleLinesEx(bgHealth, THICKNESS_FRAME, BLACK);
+    DrawTexture(healthTexture, HEALTH_X + THICKNESS_FRAME, HEALTH_Y + THICKNESS_FRAME, WHITE);
+
+    const char *textInfo = TextFormat("%i", hp);
+	Vector2 bounds = MeasureTextEx(font, textInfo, 30, 0);
+    Rectangle bgInfo = {INFO_HP_X, INFO_HP_Y, 3 * THICKNESS_FRAME + bounds.x, 3 * THICKNESS_FRAME + bounds.y};
+    DrawRectangleRec(bgInfo, GRAY);
+    DrawRectangleLinesEx(bgInfo, THICKNESS_FRAME, BLACK);
+    DrawTextEx(font, textInfo, {INFO_HP_X + 1.5 * THICKNESS_FRAME, INFO_HP_Y + 2 * THICKNESS_FRAME}, 30, 0, BLACK);
+}
+
 // Получить id всех замеченных игроков в радиусе обзора (даже через стенки)
-std::unordered_set<int> Player::getSeenPlayers(DrawInfo3D& centerObject) const 
+std::unordered_set<int> Player::getSeenPlayers() const 
 {
     std::unordered_set<int> seenPlayers;
-    bool isChosen = false;
     for (const auto& objInfo : drawInfo)
     {
         int curId = std::get<RAY_INFO::ID>(objInfo);
         if (curId && !seenPlayers.contains(curId)) seenPlayers.insert(curId);
-        if (!isChosen && std::get<RAY_INFO::NUM_RAY>(objInfo) == circlePoints / 2)
-        {
-            centerObject = objInfo;
-            isChosen = true;
-        }
     }
     return seenPlayers;
 }
@@ -194,39 +243,38 @@ void Player::showLog() const
     std::stringstream stream;
     DrawRectangle(LOG_SHIFT_X - 5, LOG_SHIFT_Y - 5, LOG_FRAME_WIDTH, LOG_FRAME_HEIGHT, softGray);
     stream << "Current player ID: " << id;
-    DrawTextEx(fontLog, stream.str().c_str(), {LOG_SHIFT_X, LOG_SHIFT_Y}, LOG_FONT_SIZE, 0, tintText);
+    DrawTextEx(font, stream.str().c_str(), {LOG_SHIFT_X, LOG_SHIFT_Y}, LOG_FONT_SIZE, 0, tintText);
     stream.str(std::string());
     stream << "Current position: (" << cameraPos.x - 2 * THICKNESS_MAP << ", " << cameraPos.y - 2 * THICKNESS_MAP << ")";
-    DrawTextEx(fontLog, stream.str().c_str(), {LOG_SHIFT_X, LOG_SHIFT_Y + LOG_FONT_SIZE}, LOG_FONT_SIZE, 0, tintText);
+    DrawTextEx(font, stream.str().c_str(), {LOG_SHIFT_X, LOG_SHIFT_Y + LOG_FONT_SIZE}, LOG_FONT_SIZE, 0, tintText);
     stream.str(std::string());
     stream << "Current angle of view: " << constrainAngle360(rotationAngle);
-    DrawTextEx(fontLog, stream.str().c_str(), {LOG_SHIFT_X, LOG_SHIFT_Y + 2 * LOG_FONT_SIZE}, LOG_FONT_SIZE, 0, tintText);
+    DrawTextEx(font, stream.str().c_str(), {LOG_SHIFT_X, LOG_SHIFT_Y + 2 * LOG_FONT_SIZE}, LOG_FONT_SIZE, 0, tintText);
     stream.str(std::string());
     stream << "Current direction of view: " << int(constrainAngle360(rotationAngle) / 90) + 1 << " quarter";
-    DrawTextEx(fontLog, stream.str().c_str(), {LOG_SHIFT_X, LOG_SHIFT_Y + 3 * LOG_FONT_SIZE}, LOG_FONT_SIZE, 0, tintText);
+    DrawTextEx(font, stream.str().c_str(), {LOG_SHIFT_X, LOG_SHIFT_Y + 3 * LOG_FONT_SIZE}, LOG_FONT_SIZE, 0, tintText);
     stream.str(std::string());
     stream << "Field of view: " << FOV;
-    DrawTextEx(fontLog, stream.str().c_str(), {LOG_SHIFT_X, LOG_SHIFT_Y + 4 * LOG_FONT_SIZE}, LOG_FONT_SIZE, 0, tintText);
+    DrawTextEx(font, stream.str().c_str(), {LOG_SHIFT_X, LOG_SHIFT_Y + 4 * LOG_FONT_SIZE}, LOG_FONT_SIZE, 0, tintText);
 
-    DrawInfo3D centerObject;
-    std::unordered_set<int> seenPlayers = getSeenPlayers(centerObject);
+    std::unordered_set<int> seenPlayers = getSeenPlayers();
     std::string strSeenPlayers;
     for (int curId : seenPlayers) strSeenPlayers += " " + std::to_string(curId);
     
     if (seenPlayers.empty())
-        DrawTextEx(fontLog, "Detected players ID's: None", {LOG_SHIFT_X, LOG_SHIFT_Y + 5 * LOG_FONT_SIZE}, LOG_FONT_SIZE, 0, tintText);
+        DrawTextEx(font, "Detected players ID's: None", {LOG_SHIFT_X, LOG_SHIFT_Y + 5 * LOG_FONT_SIZE}, LOG_FONT_SIZE, 0, tintText);
     else
-        DrawTextEx(fontLog, ("Detected players ID's:" + strSeenPlayers).c_str(),
+        DrawTextEx(font, ("Detected players ID's:" + strSeenPlayers).c_str(),
          {LOG_SHIFT_X, LOG_SHIFT_Y + 5 * LOG_FONT_SIZE}, LOG_FONT_SIZE, 0, tintText);
 
-    float distToObj, sizeObj; int idObj;
-    std::tie(distToObj, std::ignore, std::ignore, std::ignore, sizeObj, idObj) = centerObject;
-    std::string obj = (idObj == 0 ? "WALL" : ("PLAYER, ID: " + std::to_string(idObj)));
+    float distToObj, sizeObj; int objId;
+    std::tie(distToObj, std::ignore, std::ignore, std::ignore, sizeObj, objId) = centerObj;
+    std::string obj = (objId == 0 ? "WALL" : ("PLAYER, ID: " + std::to_string(objId)));
 
     stream.str(std::string());
     stream << "Information about direct object:\n\n\t Seen: " << obj << "\n\n\t Distance: " 
            << distToObj << "\n\n\t Object size: " << sizeObj;
-    DrawTextEx(fontLog, stream.str().c_str(), {LOG_SHIFT_X, LOG_SHIFT_Y + 6 * LOG_FONT_SIZE}, LOG_FONT_SIZE, 0, tintText);
+    DrawTextEx(font, stream.str().c_str(), {LOG_SHIFT_X, LOG_SHIFT_Y + 6 * LOG_FONT_SIZE}, LOG_FONT_SIZE, 0, tintText);
 }
 
 RayInfo Player::getIntersection(const Map& gameMap, Vector2& p, const Vector2& dp) const
@@ -418,6 +466,8 @@ void Player::updateSegment()
         int j = std::get<RAY_INFO::NUM_RAY>(*iter); 
         if (setRays.find(j) != setRays.end()) continue;
 
+        if (j == circlePoints / 2 - 1) centerObj = *iter;
+
         setRays.insert(j);
         float curDist = std::get<RAY_INFO::DIST>(*iter) / cos(DegToRad(deltaAngle * j - FOV / 2));
         float curAngle = rotationAngle - FOV / 2 + j * deltaAngle;
@@ -442,16 +492,16 @@ void Player::show3DViewInWindow() const
     Rectangle wall; Rectangle crop;
     for (auto iter = drawInfo.rbegin(); iter != drawInfo.rend(); ++iter)
     {
-        float curDist, shiftX, spriteSize; int j; const Texture2D* sprite; int isPlayer;
-        std::tie(curDist, shiftX, j, sprite, spriteSize, isPlayer) = *iter;
+        float curDist, shiftX, spriteSize; int j; const Texture2D* sprite; int curId;
+        std::tie(curDist, shiftX, j, sprite, spriteSize, curId) = *iter;
 
         int widthWall = GetRenderWidth() / circlePoints;
-        int realHeight = isPlayer ? REAL_HEIGHT_PLAYER : REAL_HEIGHT_WALL;
+        int realHeight = curId ? REAL_HEIGHT_PLAYER : REAL_HEIGHT_WALL;
         int heightWall = (int)(DIST_SCREEN / curDist * realHeight);
 
         wall.width = widthWall; wall.height = heightWall;
         wall.x = j * widthWall;
-        wall.y = isPlayer ? (GetRenderHeight() / 2.0f - heightWall / 3.0f) : (GetRenderHeight() - heightWall) / 2.0f;
+        wall.y = curId ? (GetRenderHeight() / 2.0f - heightWall / 3.0f) : (GetRenderHeight() - heightWall) / 2.0f;
 
         crop.x = (int)(sprite->width * shiftX / spriteSize);
         crop.y = 0;

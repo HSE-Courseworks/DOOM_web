@@ -12,6 +12,7 @@
 #include <functional>
 #include "Tools.hpp"
 #include "Map.hpp"
+#include "Weapon.hpp"
 
 #define SIDES (4)
 #define DELTA (10e-4)
@@ -27,10 +28,14 @@
 #define TRANSPARENCY (5)
 #define RADIUS_SCOPE (8)
 #define LOG_FONT_SIZE (25)
-#define LOG_SHIFT_X (280)
-#define LOG_SHIFT_Y (10)
+#define LOG_SHIFT_X (285)
+#define LOG_SHIFT_Y (15)
 #define LOG_FRAME_WIDTH (360)
 #define LOG_FRAME_HEIGHT (270)
+#define HEALTH_X (10)
+#define HEALTH_Y (280)
+#define INFO_HP_X (90)
+#define INFO_HP_Y (295)
 
 enum RAY_INFO { DIST, SHIFT_SPRITE, NUM_RAY, TEXTURE, SIZE_OBJ, ID };
 
@@ -52,7 +57,6 @@ struct Equal
         return lhs.x == rhs.x && lhs.y == rhs.y;
     }
 };
-
 class Player
 {
 public:
@@ -75,13 +79,20 @@ public:
     bool getFlagMiniMap() const;
     void setFlagShowLog(bool flag);
     bool getFlagShowLog() const;
+    float getMapShiftX() const;
+    float getMapShiftY() const;
+    std::pair<float, int> getInfoCenterObject() const;
+    const Weapon& getGun() const;
+    Weapon& getGun();
+    void takeDamage(int damage);
+    void showHealth() const;
     void setId(int id);
     int getId() const;
 
-    float mapShiftX, mapShiftY;
-
 private:
-    int id;
+    int id, hp = 100;
+    Weapon gun;
+    DrawInfo3D centerObj;
     Rectangle object; Color color;
     Texture2D texturePlayer;
     std::unordered_map<Vector2, float, Hash, Equal> mapDir;
@@ -89,17 +100,21 @@ private:
     int FOV, circlePoints;
     std::vector<Vector2> segment;
     Vector2 cameraPos;
+    float mapShiftX, mapShiftY;
     std::vector<DrawInfo3D> drawInfo;
     bool miniMap = true;
     bool isLogEnabled = false;
-    Font fontLog;
+    Font font;
+    Texture2D healthTexture;
+    Rectangle bgHealth;
+    Sound soundInjury;
 
     void detectCollision(const std::vector<const Rectangle*>& objects, Vector2& delta);
     Vector2 getCrossPoint(const int& numberSide, const std::vector<Vector2>& points, const float k, const float b) const;
     RayInfo getRayDistEnv(const Map& gameMap, const float angle, float& shiftX) const;
     float getRayDistPlayer(const Player* player, const float& k, const float& b, float& shiftX) const;
     RayInfo getIntersection(const Map& gameMap, Vector2& p, const Vector2& dp) const;
-    std::unordered_set<int> getSeenPlayers(DrawInfo3D& centerObject) const;
+    std::unordered_set<int> getSeenPlayers() const;
     void calcRayDistEnv(const Map& gameMap);
     void calcRayDistPlayers(const std::vector<Player*>& opponents);
 };

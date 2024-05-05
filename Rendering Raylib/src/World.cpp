@@ -54,12 +54,27 @@ void World::updateWorld(const float speed)
         curPlayer = (curPlayer + 1) % vecId.size(); 
         // Переключить игрока (нужно только для отладки, при мультиплеере можно убрать)
     }
-    players[curIdPlayer].updatePosition(gameMap, players, speed);   // Изменения координат текущего игрока
-    players[curIdPlayer].rotate(speed);
+    Player* curPlayerObj = &players[curIdPlayer];
+
+    curPlayerObj->updatePosition(gameMap, players, speed); 
+    curPlayerObj->rotate(speed);
     if (IsKeyReleased(KEY_M)) 
-        players[curIdPlayer].setFlagMiniMap(!players[curIdPlayer].getFlagMiniMap());
+        curPlayerObj->setFlagMiniMap(!curPlayerObj->getFlagMiniMap());
     if (IsKeyReleased(KEY_L))
-        players[curIdPlayer].setFlagShowLog(!players[curIdPlayer].getFlagShowLog());
+        curPlayerObj->setFlagShowLog(!curPlayerObj->getFlagShowLog());
+
+    if (curPlayerObj->getGun().checkShooting()) curPlayerObj->getGun().updateNextFrameShoot();
+    if (curPlayerObj->getGun().checkReloading()) curPlayerObj->getGun().updateNextFrameReload();
+
+    if (IsMouseButtonReleased(MOUSE_BUTTON_MIDDLE))
+        curPlayerObj->getGun().setFlagLeftHand(!curPlayerObj->getGun().getFlagLeftHand());
+
+    if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
+        auto infoShoot = curPlayerObj->getInfoCenterObject();
+        int damage = curPlayerObj->getGun().shoot(infoShoot);
+        if (infoShoot.second && damage) players[infoShoot.second].takeDamage(damage);
+    }
+    if (IsKeyReleased(KEY_R)) curPlayerObj->getGun().reload();
 }
 
 void World::showWorld() const
@@ -70,6 +85,9 @@ void World::showWorld() const
     DrawRectangleRec(floor, darkGray);
     players.at(curIdPlayer).show3DViewInWindow();
     players.at(curIdPlayer).showScope();
+    players.at(curIdPlayer).getGun().showGun();
+    players.at(curIdPlayer).getGun().showAmmunition();
+    players.at(curIdPlayer).showHealth();
     if (players.at(curIdPlayer).getFlagMiniMap())
     {
         Vector2 mapPos = {THICKNESS_MAP * 2 + SIZE_PIXEL_MAP / 2.0f, THICKNESS_MAP * 2 + SIZE_PIXEL_MAP / 2.0f};
@@ -77,7 +95,7 @@ void World::showWorld() const
         mapPos.x -= curPlayerPos.x;
         mapPos.y -= curPlayerPos.y;
         gameMap.showFrame();
-        gameMap.showObjectsInWindow(players.at(curIdPlayer).mapShiftX, players.at(curIdPlayer).mapShiftY);
+        gameMap.showObjectsInWindow(players.at(curIdPlayer).getMapShiftX(), players.at(curIdPlayer).getMapShiftY());
         players.at(curIdPlayer).show2DViewInWindow(mapPos);
         for (const auto& [id, player] : players)
         {
