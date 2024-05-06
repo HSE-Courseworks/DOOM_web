@@ -99,9 +99,13 @@ void World::showWorld() const
         players.at(curIdPlayer).show2DViewInWindow(mapPos);
         for (const auto& [id, player] : players)
         {
+            if (id == curIdPlayer) {
+                player.show(mapPos); continue;
+            }
+
             Vector2 posOpp = player.getPosition();
             if (std::pow(curPlayerPos.x - posOpp.x, 2) + std::pow(curPlayerPos.y - posOpp.y, 2)
-                <= std::pow(SIZE_PIXEL_MAP / 2, 2)) {
+                <= std::pow(SIZE_PIXEL_MAP / 2, 2) && players.at(curIdPlayer).getDetectedEnemy().contains(id)) {
                 player.show(mapPos);
             }
         }

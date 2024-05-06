@@ -88,11 +88,13 @@ public:
     void showHealth() const;
     void setId(int id);
     int getId() const;
+    const std::unordered_set<int>& getDetectedEnemy() const;
 
 private:
     int id, hp = 100;
     Weapon gun;
     DrawInfo3D centerObj;
+    std::unordered_set<int> detectedEnemy;
     Rectangle object; Color color;
     Texture2D texturePlayer;
     std::unordered_map<Vector2, float, Hash, Equal> mapDir;
@@ -114,7 +116,6 @@ private:
     RayInfo getRayDistEnv(const Map& gameMap, const float angle, float& shiftX) const;
     float getRayDistPlayer(const Player* player, const float& k, const float& b, float& shiftX) const;
     RayInfo getIntersection(const Map& gameMap, Vector2& p, const Vector2& dp) const;
-    std::unordered_set<int> getSeenPlayers() const;
     void calcRayDistEnv(const Map& gameMap);
     void calcRayDistPlayers(const std::vector<Player*>& opponents);
 };

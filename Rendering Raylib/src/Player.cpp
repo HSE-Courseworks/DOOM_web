@@ -220,16 +220,9 @@ void Player::showHealth() const
     DrawTextEx(font, textInfo, {INFO_HP_X + 1.5 * THICKNESS_FRAME, INFO_HP_Y + 2 * THICKNESS_FRAME}, 30, 0, BLACK);
 }
 
-// Получить id всех замеченных игроков в радиусе обзора (даже через стенки)
-std::unordered_set<int> Player::getSeenPlayers() const 
+const std::unordered_set<int>& Player::getDetectedEnemy() const
 {
-    std::unordered_set<int> seenPlayers;
-    for (const auto& objInfo : drawInfo)
-    {
-        int curId = std::get<RAY_INFO::ID>(objInfo);
-        if (curId && !seenPlayers.contains(curId)) seenPlayers.insert(curId);
-    }
-    return seenPlayers;
+    return detectedEnemy;
 }
 
 void Player::showLog() const
@@ -257,11 +250,10 @@ void Player::showLog() const
     stream << "Field of view: " << FOV;
     DrawTextEx(font, stream.str().c_str(), {LOG_SHIFT_X, LOG_SHIFT_Y + 4 * LOG_FONT_SIZE}, LOG_FONT_SIZE, 0, tintText);
 
-    std::unordered_set<int> seenPlayers = getSeenPlayers();
     std::string strSeenPlayers;
-    for (int curId : seenPlayers) strSeenPlayers += " " + std::to_string(curId);
+    for (int curId : detectedEnemy) strSeenPlayers += " " + std::to_string(curId);
     
-    if (seenPlayers.empty())
+    if (detectedEnemy.empty())
         DrawTextEx(font, "Detected players ID's: None", {LOG_SHIFT_X, LOG_SHIFT_Y + 5 * LOG_FONT_SIZE}, LOG_FONT_SIZE, 0, tintText);
     else
         DrawTextEx(font, ("Detected players ID's:" + strSeenPlayers).c_str(),
@@ -464,9 +456,11 @@ void Player::updateSegment()
     for (auto iter = drawInfo.begin(); iter != drawInfo.end(); ++iter) 
     {
         int j = std::get<RAY_INFO::NUM_RAY>(*iter); 
+        int curId = std::get<RAY_INFO::ID>(*iter);
         if (setRays.find(j) != setRays.end()) continue;
 
         if (j == circlePoints / 2 - 1) centerObj = *iter;
+        if (curId && !detectedEnemy.contains(curId)) detectedEnemy.insert(curId);
 
         setRays.insert(j);
         float curDist = std::get<RAY_INFO::DIST>(*iter) / cos(DegToRad(deltaAngle * j - FOV / 2));
@@ -483,6 +477,7 @@ void Player::updateSegment()
 void Player::calculateRayDistances(const Map& gameMap, const std::vector<Player*>& opponents) 
 {
     drawInfo.clear();
+    detectedEnemy.clear();
     calcRayDistEnv(gameMap);
     calcRayDistPlayers(opponents);
 }
