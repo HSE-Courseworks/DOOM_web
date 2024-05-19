@@ -8,6 +8,7 @@
 #include "Tools.hpp"
 
 #define SIZE_PIXEL_MAP (240)
+#define WALL_SIZE (16)
 #define THICKNESS_MAP (10)
 
 using tableChar = std::vector<std::string>;
@@ -21,7 +22,7 @@ public:
     Map(const std::string& filename);
     void findObjects();
     void readTextures(const std::string &filename);
-    void showObjectsInWindow() const;
+    void showObjectsInWindow(float shiftX, float shiftY) const;
     void showFrame() const;
     const Color& getFillColor() const;
     const Vector2& getMazeSize() const;
@@ -32,6 +33,7 @@ public:
 private:
     Vector2 mazeSize; Vector2 wallSize;
     Rectangle frame;
+    Texture2D wholeGameMap, shade;
     std::unordered_map<char, Texture2D> textures;
     std::unordered_map<char, Color> colors;
 };

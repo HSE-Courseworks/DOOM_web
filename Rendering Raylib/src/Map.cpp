@@ -5,6 +5,8 @@
 Map::Map(const std::string& filename) : 
     scheme(), objects(), textures(), colors()
 {
+    wholeGameMap = LoadTexture("resources/gameMap.png");
+    shade = LoadTexture("resources/shade.png");
     frame.width = SIZE_PIXEL_MAP; frame.height = SIZE_PIXEL_MAP;
     frame.x = THICKNESS_MAP * 2; frame.y = THICKNESS_MAP * 2;
 
@@ -17,8 +19,8 @@ Map::Map(const std::string& filename) :
     file.close();
     mazeSize.x = scheme.front().size(); // Взять длину стенки миникарты
     mazeSize.y = scheme.size();         // Взять ширину стенки миникарты
-    wallSize.x = SIZE_PIXEL_MAP / mazeSize.x;
-    wallSize.y = SIZE_PIXEL_MAP / mazeSize.y;
+    wallSize.x = WALL_SIZE;
+    wallSize.y = WALL_SIZE;
 }
 
 void Map::findObjects()
@@ -54,22 +56,28 @@ void Map::readTextures(const std::string &filename)
     file.close();
 }
 
-void Map::showFrame() const {
-    DrawRectangleRec(frame, grass);
+void Map::showFrame() const 
+{
+    DrawRectangleRec(frame, darkGray);
     Rectangle outline;
     outline.width = frame.width + 2 * THICKNESS_MAP;
     outline.height = frame.width + 2 * THICKNESS_MAP;
     outline.x = frame.x - THICKNESS_MAP;
     outline.y = frame.y - THICKNESS_MAP;
-    DrawRectangleLinesEx(outline, THICKNESS_MAP, BLACK);
+    DrawRectangleLinesEx(outline, THICKNESS_MAP, GRAY);
 }
 
-void Map::showObjectsInWindow() const
+void Map::showObjectsInWindow(float shiftX, float shiftY) const
 {
-    for (auto& object : objects) {
-        DrawRectangleRec(object.first, colors.at(object.second));
-        DrawRectangleLinesEx(object.first, 0.5, BLACK);
-    }
+    Rectangle crop = {shiftX, shiftY, SIZE_PIXEL_MAP, SIZE_PIXEL_MAP};
+    DrawTexturePro(wholeGameMap, crop, frame, {0, 0}, 0, WHITE);
+    DrawTexture(shade, 2 * THICKNESS_MAP, 2 * THICKNESS_MAP, WHITE);
+
+    // for (auto& object : objects) {
+    //     DrawRectangleRec(object.first, colors.at(object.second));
+    //     DrawRectangleRoundedLines(object.first, 0, 0, 0.5, BLACK);
+    //     DrawRectangleLinesEx(object.first, 0.5, BLACK);
+    // }
 }
 
 const Vector2& Map::getMazeSize() const

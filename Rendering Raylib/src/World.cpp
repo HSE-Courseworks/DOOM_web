@@ -1,78 +1,115 @@
 #include "World.hpp"
 
-World::World(const std::string& _map, const std::string& _textures) : 
-    gameMap(_map), players(), curIdPlayer(0)
+World::World(const std::string& map, const std::string& textures) : 
+    gameMap(map), players(), vecId(), curPlayer(-1), lastFreeId(1)
 {
-    fontLog = LoadFont("resources/romulus.png");
     gameMap.findObjects();
-    gameMap.readTextures(_textures);
+    gameMap.readTextures(textures);
     floor.width = GetRenderWidth();
     floor.height = GetRenderHeight() / 2.0f;
     floor.x = 0;
     floor.y = GetRenderHeight() / 2.0f;
-    
-    for (size_t i = 1; i <= MAX_PLAYERS; i++)
-        free_slots.insert(i);
 }
 
 void World::addPlayer(const Player& player)
 {
-    if (!free_slots.empty())
+    if (players.size() != MAX_PLAYERS)
     {
-        players.push_back(player);
-        players.back().setId(*free_slots.begin());
-        free_slots.erase(free_slots.begin());
+        if (curPlayer == -1) curPlayer = 0;
+
+        players[lastFreeId] = player;
+        players[lastFreeId].setId(lastFreeId);
+        vecId.push_back(lastFreeId++);
     }
 }
+
 void World::removePlayer(int idPlayer)
 {
-    free_slots.insert(players[idPlayer].getId());
-    players.erase(players.begin() + idPlayer);
+    int idx = std::find(vecId.begin(), vecId.end(), idPlayer) - vecId.begin();
+    vecId.erase(vecId.begin() + idx);
+    players.erase(idPlayer);
+
+    if (players.empty()) curPlayer = -1;
+    if (curPlayer == idx)
+        curPlayer = idx % vecId.size();
 }
 
 void World::updateWorld(const float speed) 
 {
-    std::vector<Player*> opponents;
-    //int next = 0;
-    for (size_t i = 0; i < players.size(); ++i) {
-        for (size_t j = 0; j < players.size(); ++j) {
+    if (curPlayer == -1) return;
+
+    int curIdPlayer = vecId[curPlayer];
+    std::vector<Player*> opponents(players.size() - 1);
+    int next = 0;
+    for (size_t i = 0; i < vecId.size(); ++i) {
+        for (size_t j = 0; j < vecId.size(); ++j) {
             if (i == j) continue;
-            opponents.push_back(&players[j]);
-            //opponents[next++] = &players[j];
+            opponents[next++] = &players[vecId[j]];
         }
-        players[i].calculateRayDistances(gameMap, opponents);
-        players[i].updateSegment();
-        //next = 0;
-        opponents.clear();
+        players[vecId[i]].calculateRayDistances(gameMap, opponents);
+        players[vecId[i]].updateSegment();
+        next = 0;
     }
     if (IsKeyReleased(KEY_V)) {
-        curIdPlayer = (curIdPlayer + 1) % players.size(); //переключить игрока
+        curPlayer = (curPlayer + 1) % vecId.size(); 
+        // Переключить игрока (нужно только для отладки, при мультиплеере можно убрать)
     }
-    players[curIdPlayer].updatePosition(gameMap, players, speed);
-    players[curIdPlayer].rotate(speed);
+    Player* curPlayerObj = &players[curIdPlayer];
+
+    curPlayerObj->updatePosition(gameMap, players, speed); 
+    curPlayerObj->rotate(speed);
     if (IsKeyReleased(KEY_M)) 
-        players[curIdPlayer].setFlagMiniMap(!players[curIdPlayer].getFlagMiniMap());
+        curPlayerObj->setFlagMiniMap(!curPlayerObj->getFlagMiniMap());
     if (IsKeyReleased(KEY_L))
-        players[curIdPlayer].setFlagShowLog(!players[curIdPlayer].getFlagShowLog());
+        curPlayerObj->setFlagShowLog(!curPlayerObj->getFlagShowLog());
+
+    if (curPlayerObj->getGun().checkShooting()) curPlayerObj->getGun().updateNextFrameShoot();
+    if (curPlayerObj->getGun().checkReloading()) curPlayerObj->getGun().updateNextFrameReload();
+
+    if (IsMouseButtonReleased(MOUSE_BUTTON_MIDDLE))
+        curPlayerObj->getGun().setFlagLeftHand(!curPlayerObj->getGun().getFlagLeftHand());
+
+    if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
+        auto infoShoot = curPlayerObj->getInfoCenterObject();
+        int damage = curPlayerObj->getGun().shoot(infoShoot);
+        if (infoShoot.second && damage) players[infoShoot.second].takeDamage(damage);
+    }
+    if (IsKeyReleased(KEY_R)) curPlayerObj->getGun().reload();
 }
 
 void World::showWorld() const
 {
-    DrawRectangleRec(floor, grass);
-    players[curIdPlayer].show3DViewInWindow();
-    players[curIdPlayer].drawCrosshair();
-    if (players[curIdPlayer].getFlagMiniMap())
-    {
-        gameMap.showFrame();
-        for (const Player& player : players)
-        {
-            player.show2DViewInWindow();
-            player.show();
-        }
-        gameMap.showObjectsInWindow();
-    }
+    if (curPlayer == -1) return;
 
-    if (players[curIdPlayer].getFlagShowLog())
-        players[curIdPlayer].showLog(fontLog);
-    
+    int curIdPlayer = vecId[curPlayer];
+    DrawRectangleRec(floor, darkGray);
+    players.at(curIdPlayer).show3DViewInWindow();
+    players.at(curIdPlayer).showScope();
+    players.at(curIdPlayer).getGun().showGun();
+    players.at(curIdPlayer).getGun().showAmmunition();
+    players.at(curIdPlayer).showHealth();
+    if (players.at(curIdPlayer).getFlagMiniMap())
+    {
+        Vector2 mapPos = {THICKNESS_MAP * 2 + SIZE_PIXEL_MAP / 2.0f, THICKNESS_MAP * 2 + SIZE_PIXEL_MAP / 2.0f};
+        Vector2 curPlayerPos = players.at(curIdPlayer).getPosition();
+        mapPos.x -= curPlayerPos.x;
+        mapPos.y -= curPlayerPos.y;
+        gameMap.showFrame();
+        gameMap.showObjectsInWindow(players.at(curIdPlayer).getMapShiftX(), players.at(curIdPlayer).getMapShiftY());
+        players.at(curIdPlayer).show2DViewInWindow(mapPos);
+        for (const auto& [id, player] : players)
+        {
+            if (id == curIdPlayer) {
+                player.show(mapPos); continue;
+            }
+
+            Vector2 posOpp = player.getPosition();
+            if (std::pow(curPlayerPos.x - posOpp.x, 2) + std::pow(curPlayerPos.y - posOpp.y, 2)
+                <= std::pow(SIZE_PIXEL_MAP / 2, 2) && players.at(curIdPlayer).getDetectedEnemy().contains(id)) {
+                player.show(mapPos);
+            }
+        }
+    }
+    if (players.at(curIdPlayer).getFlagShowLog())
+        players.at(curIdPlayer).showLog();
 }
