@@ -57,6 +57,7 @@ struct Equal
         return lhs.x == rhs.x && lhs.y == rhs.y;
     }
 };
+
 class Player
 {
 public:
@@ -68,6 +69,7 @@ public:
     float getRotation() const;
     const Vector2 getPosition() const;
     const Vector2 getSize() const;
+
 
     void showScope() const;
 	void show3DViewInWindow() const; 
