@@ -1,17 +1,18 @@
 #ifndef WORLD_HPP
 #define WORLD_HPP
 
-#define MAX_PLAYERS (5)
-
 #include "raylib.h"
 #include "Tools.hpp"
 #include "Map.hpp"
 #include "Player.hpp"
+#include "Timer.hpp"
+#include "ScoreTable.hpp"
 
 class World
 {
 public:
-    Map gameMap; 
+    Map gameMap; Timer timer;
+    ScoreTable scoreTable;
 
     World(const std::string& map, const std::string& textures);
     void addPlayer(const Player& player);

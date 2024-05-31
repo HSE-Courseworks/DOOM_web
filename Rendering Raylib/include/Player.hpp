@@ -13,6 +13,7 @@
 #include "Tools.hpp"
 #include "Map.hpp"
 #include "Weapon.hpp"
+#include "ScoreTable.hpp"
 
 #define SIDES (4)
 #define DELTA (10e-4)
@@ -28,14 +29,20 @@
 #define TRANSPARENCY (5)
 #define RADIUS_SCOPE (8)
 #define LOG_FONT_SIZE (25)
-#define LOG_SHIFT_X (285)
-#define LOG_SHIFT_Y (15)
+#define LOG_SHIFT_X (1560)
+#define LOG_SHIFT_Y (50)
 #define LOG_FRAME_WIDTH (360)
 #define LOG_FRAME_HEIGHT (270)
+
+#define BUFFS_SIZE (60)
 #define HEALTH_X (10)
-#define HEALTH_Y (280)
+#define HEALTH_Y (840)
+#define ARMOR_X (10)
+#define ARMOR_Y (920)
+#define INFO_ARMOR_X (90)
+#define INFO_ARMOR_Y (935)
 #define INFO_HP_X (90)
-#define INFO_HP_Y (295)
+#define INFO_HP_Y (855)
 
 enum RAY_INFO { DIST, SHIFT_SPRITE, NUM_RAY, TEXTURE, SIZE_OBJ, ID };
 
@@ -61,7 +68,8 @@ class Player
 {
 public:
     Player() = default;
-    Player(const Vector2& size, const Vector2& pos, const float angle, const Color& color, const std::string& texture);
+    Player(const Vector2& size, const Vector2& pos, const float angle, 
+            const Color& color, const std::string& texture, const std::string& nickName);
     void show(const Vector2& shift) const;
     void updatePosition(const Map& gameMap, const std::unordered_map<int, Player>& players, const float delta);
     void rotate(const float speed);
@@ -79,19 +87,25 @@ public:
     bool getFlagMiniMap() const;
     void setFlagShowLog(bool flag);
     bool getFlagShowLog() const;
+    void setFlagScoreTable(bool flag);
+    bool getFlagScoreTable() const;
     float getMapShiftX() const;
     float getMapShiftY() const;
+    std::string getNickName() const;
+    Color getColor() const;
     std::pair<float, int> getInfoCenterObject() const;
     const Weapon& getGun() const;
     Weapon& getGun();
-    void takeDamage(int damage);
+    void takeDamage(int damage, int idOpp, ScoreTable& table);
     void showHealth() const;
+    void showArmor() const;
     void setId(int id);
     int getId() const;
     const std::unordered_set<int>& getDetectedEnemy() const;
 
 private:
-    int id, hp = 100;
+    int id, hp = 100, armor = 30;
+    std::string nickName;
     Weapon gun;
     DrawInfo3D centerObj;
     std::unordered_set<int> detectedEnemy;
@@ -104,12 +118,12 @@ private:
     Vector2 cameraPos;
     float mapShiftX, mapShiftY;
     std::vector<DrawInfo3D> drawInfo;
-    bool miniMap = true;
-    bool isLogEnabled = false;
+    bool miniMap = true, isLogEnabled = false, scoreTable = false;
     Font font;
-    Texture2D healthTexture;
-    Rectangle bgHealth;
+    Texture2D healthTexture, armorTexture;
+    Rectangle backGroundH, backGroundA;
     Sound soundInjury;
+    std::unordered_set<int> whoDmg;
 
     void detectCollision(const std::vector<const Rectangle*>& objects, Vector2& delta);
     Vector2 getCrossPoint(const int& numberSide, const std::vector<Vector2>& points, const float k, const float b) const;

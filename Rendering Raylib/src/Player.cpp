@@ -1,16 +1,18 @@
 #include "Player.hpp"
 #include <fstream>
 
-Player::Player(const Vector2& size, const Vector2& pos, const float angle, const Color& color, const std::string& texture) : 
-    gun("resources/guns/glock", 200, 20, 200, 10), color(color), sightDist(SIZE_PIXEL_MAP * 3), rotationAngle(angle),
+Player::Player(const Vector2& size, const Vector2& pos, const float angle, 
+            const Color& color, const std::string& texture, const std::string& nickName) : 
+    nickName(nickName), gun("resources/guns/glock", 200, 20, 200, 10), color(color), sightDist(SIZE_PIXEL_MAP * 3), rotationAngle(angle),
     FOV(VIEW_ANGLE), circlePoints(COUNT_POINTS), segment(COUNT_POINTS), drawInfo()
 {
     texturePlayer = LoadTexture(texture.c_str());
 
     healthTexture = LoadTexture("resources/health.png");
-	font = LoadFontEx("resources/Calibri.ttf", 30, nullptr, 0);
-    bgHealth = {HEALTH_X, HEALTH_Y, (float)healthTexture.width + 2 * THICKNESS_FRAME, 
-                (float)healthTexture.height + 2 * THICKNESS_FRAME};
+    armorTexture = LoadTexture("resources/armor.png");
+    font = LoadFontEx("resources/Calibri.ttf", 30, nullptr, 0);
+    backGroundH = {HEALTH_X, HEALTH_Y, BUFFS_SIZE + 2 * THICKNESS_FRAME, BUFFS_SIZE + 2 * THICKNESS_FRAME};
+    backGroundA = {ARMOR_X, ARMOR_Y, BUFFS_SIZE + 2 * THICKNESS_FRAME, BUFFS_SIZE + 2 * THICKNESS_FRAME};
     soundInjury = LoadSound("resources/injury.mp3");
 
     object.width = size.x; object.height = size.y;
@@ -160,6 +162,14 @@ bool Player::getFlagShowLog() const
     return isLogEnabled;
 }
 
+void Player::setFlagScoreTable(bool flag) {
+    scoreTable = flag;
+}
+
+bool Player::getFlagScoreTable() const {
+    return scoreTable;
+}
+
 void Player::setId(int id)
 {
     this->id = id;
@@ -180,6 +190,14 @@ float Player::getMapShiftY() const
     return mapShiftY;
 }
 
+std::string Player::getNickName() const {
+    return nickName;
+}
+
+Color Player::getColor() const {
+    return color;
+}
+
 const Weapon& Player::getGun() const 
 {
     return gun;
@@ -195,21 +213,39 @@ std::pair<float, int> Player::getInfoCenterObject() const
     return std::make_pair(std::get<RAY_INFO::DIST>(centerObj), std::get<RAY_INFO::ID>(centerObj));
 }
 
-void Player::takeDamage(int damage)
+void Player::takeDamage(int damage, int idOpp, ScoreTable& table)
 {
-    hp = std::max(hp - damage, 0);
+    int trueDmg = 0;
+    if (armor) {
+        trueDmg = std::min(damage, armor);
+        armor -= trueDmg;
+    }
+    else {
+        trueDmg = std::min(damage, hp);
+        hp -= trueDmg;
+    }
     SetSoundVolume(soundInjury, VOLUME);
     PlaySound(soundInjury);
+    table.updateDamage(idOpp, trueDmg);
+    whoDmg.insert(idOpp);
     if (!hp) 
     {
+        table.updateKill(idOpp);
+        table.updateDeath(id);
+        for (auto& idPlayer : whoDmg) {
+            if (idPlayer == idOpp) continue;
+            table.updateSupport(idPlayer);
+        }
+        whoDmg.clear(); 
+
         // Дописать смерть игрока
     }
 }
 
 void Player::showHealth() const
 {
-    DrawRectangleRec(bgHealth, softRed);
-    DrawRectangleLinesEx(bgHealth, THICKNESS_FRAME, BLACK);
+    DrawRectangleRec(backGroundH, softRed);
+    DrawRectangleLinesEx(backGroundH, THICKNESS_FRAME, BLACK);
     DrawTexture(healthTexture, HEALTH_X + THICKNESS_FRAME, HEALTH_Y + THICKNESS_FRAME, WHITE);
 
     const char *textInfo = TextFormat("%i", hp);
@@ -218,6 +254,19 @@ void Player::showHealth() const
     DrawRectangleRec(bgInfo, GRAY);
     DrawRectangleLinesEx(bgInfo, THICKNESS_FRAME, BLACK);
     DrawTextEx(font, textInfo, {INFO_HP_X + 1.5 * THICKNESS_FRAME, INFO_HP_Y + 2 * THICKNESS_FRAME}, 30, 0, BLACK);
+}
+
+void Player::showArmor() const {
+    DrawRectangleRec(backGroundA, darkBlue);
+    DrawRectangleLinesEx(backGroundA, THICKNESS_FRAME, BLACK);
+    DrawTexture(armorTexture, ARMOR_X + THICKNESS_FRAME, ARMOR_Y + THICKNESS_FRAME, WHITE);
+
+    const char *textInfo = TextFormat("%i", armor);
+	Vector2 bounds = MeasureTextEx(font, textInfo, 30, 0);
+    Rectangle bgInfo = {INFO_ARMOR_X, INFO_ARMOR_Y, 3 * THICKNESS_FRAME + bounds.x, 3 * THICKNESS_FRAME + bounds.y};
+    DrawRectangleRec(bgInfo, GRAY);
+    DrawRectangleLinesEx(bgInfo, THICKNESS_FRAME, BLACK);
+    DrawTextEx(font, textInfo, {INFO_ARMOR_X + 1.5 * THICKNESS_FRAME, INFO_ARMOR_Y + 2 * THICKNESS_FRAME}, 30, 0, BLACK);
 }
 
 const std::unordered_set<int>& Player::getDetectedEnemy() const

@@ -79,7 +79,7 @@ endif
 
 SRC_DIR = src
 OBJ_DIR = obj
-OBJS ?= src/main.cpp src/Fps.cpp src/Tools.cpp src/World.cpp src/Map.cpp src/Player.cpp src/Weapon.cpp
+OBJS ?= src/main.cpp src/Fps.cpp src/Tools.cpp src/World.cpp src/Map.cpp src/Player.cpp src/Weapon.cpp src/Timer.cpp src/ScoreTable.cpp
 
 all:
 	$(MAKE) $(PROJECT_NAME)

@@ -28,8 +28,8 @@ int main()
     // pos_4.x = game.gameMap.getFrame().x + game.gameMap.getWallSize().x * 3 / 2.0f;
     // pos_4.y = game.gameMap.getFrame().y + game.gameMap.getWallSize().y * (game.gameMap.getMazeSize().y - 3 / 2.0f);
 
-    game.addPlayer(Player(sizePlayer, pos_1, 0, softRed, "resources/player_1.png"));
-    game.addPlayer(Player(sizePlayer, pos_2, 180, softBlue, "resources/player_2.png"));
+    game.addPlayer(Player(sizePlayer, pos_1, 0, softRed, "resources/player_1.png", "Lolbl4"));
+    game.addPlayer(Player(sizePlayer, pos_2, 180, softBlue, "resources/player_2.png", "Sadness"));
     // game.addPlayer(Player(sizePlayer, pos_3, 180, softPink, "resources/player_3.png"));
     // game.addPlayer(Player(sizePlayer, pos_4, 0, softYellow, "resources/player_4.png"));
 
@@ -43,6 +43,7 @@ int main()
         BeginDrawing();
         ClearBackground(BLACK);
         game.updateWorld(GetFrameTime());
+        if (!game.timer.getLeftSeconds()) break;
         game.showWorld();
         curFps.show();
         EndDrawing();

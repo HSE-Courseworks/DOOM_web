@@ -1,7 +1,7 @@
 #include "World.hpp"
 
 World::World(const std::string& map, const std::string& textures) : 
-    gameMap(map), players(), vecId(), curPlayer(-1), lastFreeId(1)
+    gameMap(map), timer(120), scoreTable(), players(), vecId(), curPlayer(-1), lastFreeId(1)
 {
     gameMap.findObjects();
     gameMap.readTextures(textures);
@@ -19,6 +19,7 @@ void World::addPlayer(const Player& player)
 
         players[lastFreeId] = player;
         players[lastFreeId].setId(lastFreeId);
+        scoreTable.addPlayer(lastFreeId, player.getNickName(), player.getColor());
         vecId.push_back(lastFreeId++);
     }
 }
@@ -28,6 +29,7 @@ void World::removePlayer(int idPlayer)
     int idx = std::find(vecId.begin(), vecId.end(), idPlayer) - vecId.begin();
     vecId.erase(vecId.begin() + idx);
     players.erase(idPlayer);
+    scoreTable.deletePlayer(idPlayer);
 
     if (players.empty()) curPlayer = -1;
     if (curPlayer == idx)
@@ -38,6 +40,7 @@ void World::updateWorld(const float speed)
 {
     if (curPlayer == -1) return;
 
+    timer.update();
     int curIdPlayer = vecId[curPlayer];
     std::vector<Player*> opponents(players.size() - 1);
     int next = 0;
@@ -63,6 +66,9 @@ void World::updateWorld(const float speed)
     if (IsKeyReleased(KEY_L))
         curPlayerObj->setFlagShowLog(!curPlayerObj->getFlagShowLog());
 
+    if (IsKeyDown(KEY_TAB)) curPlayerObj->setFlagScoreTable(true);
+    else curPlayerObj->setFlagScoreTable(false);
+
     if (curPlayerObj->getGun().checkShooting()) curPlayerObj->getGun().updateNextFrameShoot();
     if (curPlayerObj->getGun().checkReloading()) curPlayerObj->getGun().updateNextFrameReload();
 
@@ -72,7 +78,7 @@ void World::updateWorld(const float speed)
     if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
         auto infoShoot = curPlayerObj->getInfoCenterObject();
         int damage = curPlayerObj->getGun().shoot(infoShoot);
-        if (infoShoot.second && damage) players[infoShoot.second].takeDamage(damage);
+        if (infoShoot.second && damage) players[infoShoot.second].takeDamage(damage, curPlayerObj->getId(), scoreTable);
     }
     if (IsKeyReleased(KEY_R)) curPlayerObj->getGun().reload();
 }
@@ -88,6 +94,7 @@ void World::showWorld() const
     players.at(curIdPlayer).getGun().showGun();
     players.at(curIdPlayer).getGun().showAmmunition();
     players.at(curIdPlayer).showHealth();
+    players.at(curIdPlayer).showArmor();
     if (players.at(curIdPlayer).getFlagMiniMap())
     {
         Vector2 mapPos = {THICKNESS_MAP * 2 + SIZE_PIXEL_MAP / 2.0f, THICKNESS_MAP * 2 + SIZE_PIXEL_MAP / 2.0f};
@@ -112,4 +119,7 @@ void World::showWorld() const
     }
     if (players.at(curIdPlayer).getFlagShowLog())
         players.at(curIdPlayer).showLog();
+    timer.show();
+    if (players.at(curIdPlayer).getFlagScoreTable())
+        scoreTable.show();
 }
