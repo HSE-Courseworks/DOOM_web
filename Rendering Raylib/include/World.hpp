@@ -25,6 +25,9 @@ private:
     std::vector<int> vecId;
     int curPlayer, lastFreeId;
     Rectangle floor;
+
+    void showMiniMap() const;
+    void showMap() const;
 };
 
 #endif 

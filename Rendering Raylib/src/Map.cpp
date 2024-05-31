@@ -100,6 +100,10 @@ const Texture2D* Map::getTexture(char type) const
     return &textures.at(type);
 }
 
+const Texture2D* Map::getMapImage() const {
+    return &wholeGameMap;
+}
+
 //#include <stack>
 //#include <random>
 //#include <chrono>

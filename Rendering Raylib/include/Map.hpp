@@ -29,6 +29,7 @@ public:
     const Vector2& getWallSize() const;
     const Rectangle& getFrame() const;
     const Texture2D* getTexture(char type) const;
+    const Texture2D* getMapImage() const;
 
 private:
     Vector2 mazeSize; Vector2 wallSize;

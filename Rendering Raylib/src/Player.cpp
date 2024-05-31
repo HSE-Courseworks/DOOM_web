@@ -142,14 +142,14 @@ const Vector2 Player::getSize() const
     return {object.width, object.height};
 }
 
-void Player::setFlagMiniMap(bool flag)
+void Player::setFlagMap(bool flag)
 {
-	miniMap = flag;
+	map = flag;
 }
 
-bool Player::getFlagMiniMap() const
+bool Player::getFlagMap() const
 {
-	return miniMap;
+	return map;
 }
 
 void Player::setFlagShowLog(bool flag)
@@ -168,6 +168,14 @@ void Player::setFlagScoreTable(bool flag) {
 
 bool Player::getFlagScoreTable() const {
     return scoreTable;
+}
+
+void Player::setLastTimeShoot(int time) {
+    lastTimeShoot = time;
+}
+
+int Player::getLastTimeShoot() const {
+    return lastTimeShoot;
 }
 
 void Player::setId(int id)
@@ -192,6 +200,18 @@ float Player::getMapShiftY() const
 
 std::string Player::getNickName() const {
     return nickName;
+}
+
+void Player::setNickName(const std::string& newNickName) {
+    nickName = newNickName;
+}
+
+void Player::showNickName() const {
+	Vector2 bounds = MeasureTextEx(font, nickName.c_str(), 30, 0);
+    Rectangle bgInfo = {INFO_NICK_X, INFO_NICK_Y, 3 * THICKNESS_FRAME + bounds.x, 3 * THICKNESS_FRAME + bounds.y};
+    DrawRectangleRec(bgInfo, GRAY);
+    DrawRectangleLinesEx(bgInfo, THICKNESS_FRAME, BLACK);
+    DrawTextEx(font, nickName.c_str(), {INFO_NICK_X + 1.5 * THICKNESS_FRAME, INFO_NICK_Y + 2 * THICKNESS_FRAME}, 30, 0, BLACK);
 }
 
 Color Player::getColor() const {

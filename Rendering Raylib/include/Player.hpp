@@ -16,6 +16,7 @@
 #include "ScoreTable.hpp"
 
 #define SIDES (4)
+#define TIME_SEEN (3)
 #define DELTA (10e-4)
 #define LIMIT (10e-3)
 #define VIEW_ANGLE (60)
@@ -43,6 +44,8 @@
 #define INFO_ARMOR_Y (935)
 #define INFO_HP_X (90)
 #define INFO_HP_Y (855)
+#define INFO_NICK_X (10)
+#define INFO_NICK_Y (280)
 
 enum RAY_INFO { DIST, SHIFT_SPRITE, NUM_RAY, TEXTURE, SIZE_OBJ, ID };
 
@@ -83,15 +86,19 @@ public:
     void showLog() const;
     void calculateRayDistances(const Map& gameMap, const std::vector<Player*>& opponents);
     void updateSegment();
-    void setFlagMiniMap(bool flag);
-    bool getFlagMiniMap() const;
+    void setFlagMap(bool flag);
+    bool getFlagMap() const;
     void setFlagShowLog(bool flag);
     bool getFlagShowLog() const;
     void setFlagScoreTable(bool flag);
     bool getFlagScoreTable() const;
     float getMapShiftX() const;
     float getMapShiftY() const;
+    void setLastTimeShoot(int time);
+    int getLastTimeShoot() const;
     std::string getNickName() const;
+    void setNickName(const std::string& newNickName);
+    void showNickName() const;
     Color getColor() const;
     std::pair<float, int> getInfoCenterObject() const;
     const Weapon& getGun() const;
@@ -113,12 +120,12 @@ private:
     Texture2D texturePlayer;
     std::unordered_map<Vector2, float, Hash, Equal> mapDir;
     float sightDist, rotationAngle;
-    int FOV, circlePoints;
+    int FOV, circlePoints, lastTimeShoot = 0;
     std::vector<Vector2> segment;
     Vector2 cameraPos;
     float mapShiftX, mapShiftY;
     std::vector<DrawInfo3D> drawInfo;
-    bool miniMap = true, isLogEnabled = false, scoreTable = false;
+    bool map = true, isLogEnabled = false, scoreTable = false;
     Font font;
     Texture2D healthTexture, armorTexture;
     Rectangle backGroundH, backGroundA;
