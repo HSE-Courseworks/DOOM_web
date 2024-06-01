@@ -5,25 +5,18 @@
 #include "Data.hpp"
 #include "Server.h"
 #include <format>
+#include <iostream>
 
 void Server::CustomLog(int msgType, const char *text)
 {
-    char timeStr[64] = { 0 };
-    time_t now = time(NULL);
-    struct tm *tm_info = localtime(&now);
-
-    strftime(timeStr, sizeof(timeStr), "%Y-%m-%d %H:%M:%S", tm_info);
-    printf("[%s] ", timeStr);
-
     switch (msgType)
     {
-        case LOG_INFO: printf("[INFO] : "); break;
-        case LOG_ERROR: printf("[ERROR]: "); break;
+        case LOG_INFO: std::cout << "[INFO] : "; break;
+        case LOG_ERROR: std::cout << "[ERROR]: "; break;
         default: break;
     }
 
-    printf(text);
-    printf("\n");
+    std::cout << text << std::endl;
 }
 
 void Server::LibStartUp()
