@@ -35,7 +35,7 @@ endif
 #  -Wall                turns on most, but not all, compiler warnings
 #  -Wno-missing-braces  ignore invalid warning (GCC bug 53119)
 #  -D_DEFAULT_SOURCE    use with -std=c99 on Linux and PLATFORM_WEB, required for timespec
-CFLAGS += -Wall -std=c++17 -D_DEFAULT_SOURCE -Wno-missing-braces
+CFLAGS += -Wall -std=c++20 -D_DEFAULT_SOURCE -Wno-missing-braces
 CFLAGS += $(RAYLIB_PATH)/src/raylib.rc.data -Wl,--subsystem,windows
 
 ifeq ($(BUILD_MODE),DEBUG)
@@ -69,17 +69,17 @@ ifeq ($(PLATFORM),PLATFORM_WEB)
     EXT = .html
 endif
 
-INCLUDE_PATHS = -I. -I$(RAYLIB_PATH)/src -I$(RAYLIB_PATH)/src/external -Iinclude
+INCLUDE_PATHS = -I. -I$(RAYLIB_PATH)/src -I$(RAYLIB_PATH)/src/external -Iinclude -I./lib/include
 LDFLAGS = -L. -L$(RAYLIB_RELEASE_PATH) -L$(RAYLIB_PATH)/src
 LDLIBS = -lraylib -lopengl32 -lgdi32 -lwinmm
 
 ifeq ($(PLATFORM),PLATFORM_WEB)
-    LDLIBS = $(RAYLIB_RELEASE_PATH)/libraylib.a
+    LDLIBS = $(RAYLIB_RELEASE_PATH)/web/libraylib.a
 endif
 
 SRC_DIR = src
 OBJ_DIR = obj
-OBJS ?= src/main.cpp src/Fps.cpp src/Tools.cpp src/World.cpp src/Map.cpp src/CameraPlayer.cpp src/Player.cpp
+OBJS ?= src/main.cpp src/Fps.cpp src/Tools.cpp src/World.cpp src/Map.cpp src/Player.cpp src/Weapon.cpp
 
 all:
 	$(MAKE) $(PROJECT_NAME)

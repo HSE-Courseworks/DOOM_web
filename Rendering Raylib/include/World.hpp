@@ -1,25 +1,29 @@
 #ifndef WORLD_HPP
 #define WORLD_HPP
 
+#define MAX_PLAYERS (5)
+
 #include "raylib.h"
 #include "Tools.hpp"
-#include "CameraPlayer.hpp"
 #include "Map.hpp"
+#include "Player.hpp"
 
 class World
 {
 public:
-	Map gameMap; 
-	CameraPlayer gameCamera;
-	World(const char* filename);
-	void updateWorld(const float speed);
-	void showWorld() const;
-	void setFlagMiniMap(bool flag);
-	bool getFlagMiniMap() const;
+    Map gameMap; 
+
+    World(const std::string& map, const std::string& textures);
+    void addPlayer(const Player& player);
+    void removePlayer(const int idPlayer);
+    void updateWorld(const float speed);
+    void showWorld() const;
 
 private:
-	bool miniMap;
-	Rectangle floor;
+    std::unordered_map<int, Player> players; // map: id -> player
+    std::vector<int> vecId;
+    int curPlayer, lastFreeId;
+    Rectangle floor;
 };
 
 #endif 

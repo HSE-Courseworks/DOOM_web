@@ -2,16 +2,18 @@
 #define FPS_HPP
 
 #include "raylib.h"
+#include "Tools.hpp"
 #include <string>
 
 #define FONT_SIZE (25)
 #define SPACING (2)
-#define SHIFT (10)
+#define SHIFT_X (10)
+#define SHIFT_Y (10)
 
 class Fps
 {
 public:
-	Fps(const char* textFont);
+	Fps();
 	void show() const;
 private:
 	Font font;
