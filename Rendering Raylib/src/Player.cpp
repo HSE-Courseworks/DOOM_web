@@ -1,7 +1,6 @@
 #include "Player.hpp"
-#include <fstream>
 
-Player::Player(const Vector2& size, const Vector2& pos, const float angle, const Color& color, const std::string& texture) : 
+Player::Player(const Vector2& pos, const float angle, const Color& color, const std::string& texture) : 
     gun("resources/guns/glock", 200, 20, 200, 10), color(color), sightDist(SIZE_PIXEL_MAP * 3), rotationAngle(angle),
     FOV(VIEW_ANGLE), circlePoints(COUNT_POINTS), segment(COUNT_POINTS), drawInfo()
 {
@@ -13,11 +12,8 @@ Player::Player(const Vector2& size, const Vector2& pos, const float angle, const
                 (float)healthTexture.height + 2 * THICKNESS_FRAME};
     soundInjury = LoadSound("resources/injury.mp3");
 
-    object.width = size.x; object.height = size.y;
     cameraPos.x = pos.x;
     cameraPos.y = pos.y; 
-    object.x = pos.x - object.width / 2.0f;
-    object.y = pos.y - object.height / 2.0f;
     mapShiftX = pos.x - THICKNESS_MAP * 2;
     mapShiftY = pos.y - THICKNESS_MAP * 2;
 
@@ -36,21 +32,18 @@ void Player::showScope() const
 
 void Player::show(const Vector2& shift) const
 {
-    Rectangle fake = object;
-    fake.x += shift.x; fake.y += shift.y;
-    DrawRectangleRec(fake, color);
-    // DrawRectangleLinesEx(fake, 1, color);
+    DrawCircle(cameraPos.x + shift.x, cameraPos.y + shift.y, RADIUS, color);
 }
 
-void Player::detectCollision(const std::vector<const Rectangle*>& objects, Vector2& delta)
+void Player::detectCollision(const std::vector<Rectangle>& objects, Vector2& delta)
 {
-    Rectangle copy(object); 
+    Rectangle copy(cameraPos.x - RADIUS, cameraPos.y - RADIUS, 2 * RADIUS, 2 * RADIUS); 
     copy.x += delta.x; copy.y += delta.y;
 
     std::vector<int> indexCollisions;
     for (size_t i = 0; i < objects.size(); ++i)
     {
-        if (CheckCollisionRecs(copy, *objects[i]))
+        if (CheckCollisionRecs(copy, objects[i]))
             indexCollisions.push_back(i);
     }
     
@@ -60,22 +53,26 @@ void Player::detectCollision(const std::vector<const Rectangle*>& objects, Vecto
         for (const auto& ind : indexCollisions)
         {
             if (delta.x > 0)
-                delta_x += copy.x + copy.width - objects[ind]->x;
+                delta_x += copy.x + copy.width - objects[ind].x;
             else
-                delta_x += objects[ind]->x + objects[ind]->width - copy.x;
+                delta_x += objects[ind].x + objects[ind].width - copy.x;
 
             if (delta.y > 0)
-                delta_y += copy.y + copy.height - objects[ind]->y;
+                delta_y += copy.y + copy.height - objects[ind].y;
             else
-                delta_y += objects[ind]->y + objects[ind]->height - copy.y;
+                delta_y += objects[ind].y + objects[ind].height - copy.y;
         }
 
-        if (fabs(delta_x - delta_y) < BLOCK) { delta.x = 0; delta.y = 0; }
+        if (fabs(delta_x - delta_y) < BLOCK) { 
+            delta.x = 0; delta.y = 0; isMoving = false;
+            stageMoving = 0;
+        }
         else if (delta_x > delta_y) delta.y = 0;
         else if (delta_y > delta_x) delta.x = 0;
     }
-    object.x += delta.x;
-    object.y += delta.y;
+    isMoving = true;
+    stageMoving = (stageMoving + 1) % (COUNT_STAGES * DELAY);
+    if (!stageMoving) stageMoving++;
     cameraPos.x += delta.x;
     cameraPos.y += delta.y;
     mapShiftX += delta.x;
@@ -107,13 +104,17 @@ void Player::updatePosition(const Map& gameMap, const std::unordered_map<int, Pl
     Vector2 deltaPos = { (float)(speed * cos(rotAngle - mapDir[result]) * notStay),
                           (float)(speed * sin(rotAngle - mapDir[result]) * notStay) };
 
-    std::vector<const Rectangle*> objects;
+    if (!notStay) {
+        isMoving = false; stageMoving = 0; return;
+    }
+
+    std::vector<Rectangle> objects;
     for (size_t i = 0; i < gameMap.objects.size(); ++i) {
-        objects.push_back(&gameMap.objects[i].first);
+        objects.push_back(gameMap.objects[i].first);
     }
     for (auto& [id, player] : players) {
         if (player.id == this->id) continue;
-        objects.push_back(&player.object);
+        objects.push_back({player.getPosition().x - RADIUS, player.getPosition().y - RADIUS, 2 * RADIUS, 2 * RADIUS});
     }
     detectCollision(objects, deltaPos);
 }
@@ -137,7 +138,8 @@ const Vector2 Player::getPosition() const
 
 const Vector2 Player::getSize() const
 {
-    return {object.width, object.height};
+    //return {object.width, object.height};
+    return {2 * RADIUS, 2 * RADIUS};
 }
 
 void Player::setFlagMiniMap(bool flag)
@@ -259,13 +261,14 @@ void Player::showLog() const
         DrawTextEx(font, ("Detected players ID's:" + strSeenPlayers).c_str(),
          {LOG_SHIFT_X, LOG_SHIFT_Y + 5 * LOG_FONT_SIZE}, LOG_FONT_SIZE, 0, tintText);
 
-    float distToObj, sizeObj; int objId;
-    std::tie(distToObj, std::ignore, std::ignore, std::ignore, sizeObj, objId) = centerObj;
+    float distToObj; int objId;
+    std::tie(distToObj, std::ignore, std::ignore, std::ignore, 
+            std::ignore, std::ignore, objId, std::ignore) = centerObj;
     std::string obj = (objId == 0 ? "WALL" : ("PLAYER, ID: " + std::to_string(objId)));
 
     stream.str(std::string());
     stream << "Information about direct object:\n\n\t Seen: " << obj << "\n\n\t Distance: " 
-           << distToObj << "\n\n\t Object size: " << sizeObj;
+           << distToObj << "\n\n\t Object size: " << (objId ? RADIUS * 2 : WALL_SIZE);
     DrawTextEx(font, stream.str().c_str(), {LOG_SHIFT_X, LOG_SHIFT_Y + 6 * LOG_FONT_SIZE}, LOG_FONT_SIZE, 0, tintText);
 }
 
@@ -370,71 +373,58 @@ RayInfo Player::getRayDistEnv(const Map& gameMap, const float angle, float& shif
     return std::make_pair(std::min(resultHor.first, resultVert.first), mapCell);
 }
 
-Vector2 Player::getCrossPoint(const int& numberSide, const std::vector<Vector2>& points, const float k, const float b) const 
+Vector2 Player::getCrossPoint(const std::vector<Vector2>& points) const 
 {  
-    Vector2 crossPoint = {1e10, 1e10};
-    // Вертикальная стенка игрока  
-    if (numberSide % 2) {
-        if (std::fabs(k) > 1e8) return crossPoint;
-        else if (std::fabs(k) < 1e-8) crossPoint = {points[numberSide].x, b};
-        else crossPoint = {points[numberSide].x, k * points[numberSide].x + b};
-    }
-    // Горизонтальная стенка игрока
-    else {
-        if (std::fabs(k) < 1e-8) return crossPoint;
-        else if (std::fabs(k) > 1e8) crossPoint = {b, points[numberSide].y};
-        else crossPoint = {(points[numberSide].y - b) / k, points[numberSide].y};
-    }
-    return crossPoint;
+    if (points.empty()) return {1e10, 1e10};
+    else if (points.size() == 1) return points.front();
+    return (getDist2Points(cameraPos, points.front()) < getDist2Points(cameraPos, points.back()))
+             ? points.front() : points.back();
 }
 
-float Player::getRayDistPlayer(const Player* player, const float& k, const float& b, float& shiftX) const
+float Player::getRayDistPlayer(const Player* player, const double k, const double b) const
 {
-    std::vector<Vector2> points;
-    const int eps = 1e-1, IS_VERTICAL = 2;
-    points.push_back({player->object.x, player->object.y});
-    points.push_back({player->object.x + player->object.width, player->object.y});
-    points.push_back({player->object.x + player->object.width, player->object.y + player->object.height});
-    points.push_back({player->object.x, player->object.y + player->object.height});
+    std::vector<Vector2> points; const double eps = 1e-2;
+    double posPlayerX = player->getPosition().x;
+    double posPlayerY = player->getPosition().y;
 
-    float curDist = 0, resultDist = sightDist;
-    float startAngle = constrainAngle360(rotationAngle - FOV / 2), endAngle = constrainAngle360(rotationAngle + FOV / 2);
+    double aVal = 1.0 + k * k;
+    double bVal = -2.0 * posPlayerX + 2.0 * k * b - 2.0 * k * posPlayerY;
+    double cVal = posPlayerX * posPlayerX + b * b - 2.0 * posPlayerY * b +
+                posPlayerY * posPlayerY - RADIUS * RADIUS;
 
-    for (int curSide = 0; curSide < SIDES; ++curSide) {
-        Vector2 crossPoint = getCrossPoint(curSide, points, k, b);
-        float angle = constrainAngle360(RadToDeg(std::atan2(crossPoint.y - cameraPos.y, crossPoint.x - cameraPos.x)));
-        bool check = true;
-
-        float left = 0, right = 0, coord = 0;
-        if (curSide % IS_VERTICAL) {
-            left = points[(curSide % SIDES)].y;
-            right = points[((curSide + 1) % SIDES)].y;
-            coord = crossPoint.y;
-        }
-        else {
-            left = points[(curSide % SIDES)].x;
-            right = points[((curSide + 1) % SIDES)].x;
-            coord = crossPoint.x;
-        }
-
-        float leftBound = std::min(left, right), rightBound = std::max(left, right);
-
-        if (leftBound + eps < coord && rightBound - eps > coord) {
-            curDist = getDist2Points(cameraPos, crossPoint);
-            if (startAngle > endAngle) check = startAngle <= angle || angle <= endAngle;
-            else check = startAngle <= angle && angle <= endAngle;
-            if (curDist < resultDist && check) {
-                resultDist = curDist;
-                shiftX = crossPoint.y - leftBound;
-            }
-        }
+    double D = bVal * bVal - 4.0 * aVal * cVal;
+    if (std::fabs(D) <= eps)
+    {
+        float x = (-bVal) / (2 * aVal);
+        float y = k * x + b;
+        points.push_back({x, y});
     }
-    return resultDist;
+    else if (D > 0)
+    {
+        float x1 = (-bVal + std::sqrt(D)) / (2 * aVal);
+        float y1 = k * x1 + b;
+        float x2 = (-bVal - std::sqrt(D)) / (2 * aVal);
+        float y2 = k * x2 + b;
+        points.push_back({x1, y1}); points.push_back({x2, y2});
+    }
+
+    Vector2 crossPoint = getCrossPoint(points);
+    float distance = getDist2Points(cameraPos, crossPoint);
+    float startAngle = constrainAngle360(rotationAngle - FOV / 2);
+    float endAngle = constrainAngle360(rotationAngle + FOV / 2);
+    float angle = constrainAngle360(RadToDeg(std::atan2(crossPoint.y - cameraPos.y, crossPoint.x - cameraPos.x)));
+
+    bool check = false;
+    if (startAngle > endAngle) check = startAngle <= angle || angle <= endAngle;
+    else check = startAngle <= angle && angle <= endAngle;
+
+    if (!check || std::fabs(distance - sightDist) <= eps) return sightDist;
+    return distance;
 }
 
 void Player::show2DViewInWindow(const Vector2& shift) const 
 {
-    Color curColor = lightGray; curColor.a = TRANSPARENCY;
+    Color curColor = flashlight; curColor.a = TRANSPARENCY;
     Vector2 pos = { cameraPos.x + shift.x, cameraPos.y + shift.y };
     for (int i = 0; i < circlePoints; ++i) {
         Vector2 curPoint = segment[i];
@@ -485,23 +475,33 @@ void Player::calculateRayDistances(const Map& gameMap, const std::vector<Player*
 void Player::show3DViewInWindow() const
 {
     Rectangle wall; Rectangle crop;
+    float frameAngle = 45;  // Кадр меняется на каждые 45 градусов
     for (auto iter = drawInfo.rbegin(); iter != drawInfo.rend(); ++iter)
     {
-        float curDist, shiftX, spriteSize; int j; const Texture2D* sprite; int curId;
-        std::tie(curDist, shiftX, j, sprite, spriteSize, curId) = *iter;
+        float curDist, opp_rot, shiftX; int j, curId, stage; const Texture2D* sprite; Vector2 opp_pos;
+        std::tie(curDist, opp_rot, opp_pos, shiftX, j, sprite, curId, stage) = *iter;
+
+        float spriteAngle = 0;
+        if (curId && opp_pos.x - cameraPos.x)
+        {
+            float angleDistOX = constrainAngle360(RadToDeg(std::atan2(opp_pos.y - cameraPos.y, opp_pos.x - cameraPos.x))); 
+            // Арктангенс тангенса угла наклона между прямой Ox и вектором расстояния между игроками = угол между ними
+            spriteAngle = opp_rot + 180 - angleDistOX;
+        }
 
         int widthWall = GetRenderWidth() / circlePoints;
-        int realHeight = curId ? REAL_HEIGHT_PLAYER : REAL_HEIGHT_WALL;
+        int realHeight = REAL_HEIGHT;
         int heightWall = (int)(DIST_SCREEN / curDist * realHeight);
 
         wall.width = widthWall; wall.height = heightWall;
         wall.x = j * widthWall;
-        wall.y = curId ? (GetRenderHeight() / 2.0f - heightWall / 3.0f) : (GetRenderHeight() - heightWall) / 2.0f;
+        wall.y = curId ? (GetRenderHeight() / 2.0f - heightWall / 2.5f) : (GetRenderHeight() - heightWall) / 2.0f;
 
-        crop.x = (int)(sprite->width * shiftX / spriteSize);
-        crop.y = 0;
-        crop.width = (int)(sprite->width / circlePoints);
-        crop.height = sprite->height;
+        crop.x = curId ? (int)(TEXTURE_SIZE * std::floor(spriteAngle / frameAngle) + TEXTURE_SIZE * shiftX) 
+                       : (int)(sprite->width * shiftX);
+        crop.y = curId ? (stage / DELAY) * TEXTURE_SIZE : 0;
+        crop.width = curId ? (int)(TEXTURE_SIZE / circlePoints) : (int)(sprite->width / circlePoints);
+        crop.height = curId ? TEXTURE_SIZE : sprite->height;
 
         Color tint = changeLightness(lightGray, std::min(0.0f, -curDist));
         DrawTexturePro(*sprite, crop, wall, {0, 0}, 0, tint);
@@ -512,29 +512,46 @@ void Player::calcRayDistPlayers(const std::vector<Player*>& opponents)
 {
     float curAngle = rotationAngle - FOV / 2;
     float deltaAngle = (float)FOV / circlePoints;
-
-    float sizePlayer = getSize().x;
     for (int i = 0; i < circlePoints; ++i)
     {
-        float k = std::tan(DegToRad(curAngle)), b = 0;
-        // Прямая вертикальная
-        if (std::fabs(k) > 1e8) b = cameraPos.x;
-        // Прямая горизонтальная
-        else if (std::fabs(k) < 1e-8) b = cameraPos.y;
-        // Прямая наклонная 
-        else b = cameraPos.y - k * cameraPos.x;
+        double k = std::tan(DegToRad(curAngle));
+        double b = cameraPos.y - k * cameraPos.x;
+        float curDist = sightDist; double curShiftX = 0; int chosen = -1;
 
-        float curDist = sightDist, shiftX = 0; int chosen = -1;
+        double curAngleViewPlayer = 0; const double eps = 2e-1;
         for (size_t j = 0; j < opponents.size(); ++j) {
-            float curShiftX = 0;
-            float rayDist = getRayDistPlayer(opponents[j], k, b, curShiftX);
+
+            double aVal = getDist2Points(cameraPos, opponents[j]->getPosition()); // O1O2
+            double bVal = getDist2Points(cameraPos, {cameraPos.x + 1, cameraPos.y}); // O1K
+            double cVal = getDist2Points(opponents[j]->getPosition(), {cameraPos.x + 1, cameraPos.y}); // O2K
+
+            // c ^ 2 = a ^ 2 + b ^ 2 - 2 * a * b * cosC;
+            // cosC = (a ^ 2 + b ^ 2 - c ^ 2) / (2 * a * b);
+            double centerAngle = 0;
+            if (aVal < bVal + cVal && bVal < aVal + cVal && cVal < aVal + bVal) {
+                centerAngle = RadToDeg(std::acos((aVal * aVal + bVal * bVal - cVal * cVal) / (2 * aVal * bVal)));
+                if (cameraPos.y > opponents[j]->getPosition().y) centerAngle = 360.0 - centerAngle;
+            }
+            else if (cameraPos.x > opponents[j]->getPosition().x) centerAngle = 180.0;
+
+            double delta = RadToDeg(std::asin(RADIUS / aVal));
+            double startAngle = constrainAngle360(centerAngle - delta - eps);
+            double angleViewPlayer = 2 * delta + 2 * eps;
+
+            float rayDist = getRayDistPlayer(opponents[j], k, b);
             if (rayDist < curDist) {
-                shiftX = curShiftX; curDist = rayDist; chosen = j;
+                curShiftX = constrainAngle360(curAngle) > startAngle ? constrainAngle360(curAngle) - startAngle 
+                            : 360.0 - startAngle + constrainAngle360(curAngle);
+                curAngleViewPlayer = angleViewPlayer;
+                curDist = rayDist; chosen = j;
             }
         }
+
         if (std::fabs(sightDist - curDist) > 1e-9) {
             curDist *= cos(DegToRad(deltaAngle * i - FOV / 2));
-            drawInfo.push_back(std::make_tuple(curDist, shiftX, i, &opponents[chosen]->texturePlayer, sizePlayer, opponents[chosen]->id));
+            Vector2 opp_pos = opponents[chosen]->getPosition();
+            drawInfo.push_back(std::make_tuple(curDist, opponents[chosen]->getRotation(), opp_pos, curShiftX / curAngleViewPlayer,
+                                               i, &opponents[chosen]->texturePlayer, opponents[chosen]->id, opponents[chosen]->stageMoving));
         }
         curAngle += deltaAngle;
     }
@@ -553,7 +570,7 @@ void Player::calcRayDistEnv(const Map& gameMap)
         cur.first *= cos(DegToRad(deltaAngle * i - FOV / 2));
 
         char type = gameMap.scheme[cur.second.x][cur.second.y];
-        drawInfo.push_back(std::make_tuple(cur.first, shiftX, i, gameMap.getTexture(type), sizeWall, 0));
+        drawInfo.push_back(std::make_tuple(cur.first, -1, Vector2(0, 0), shiftX / sizeWall, i, gameMap.getTexture(type), 0, 0));
         curAngle += deltaAngle;
     }
 }

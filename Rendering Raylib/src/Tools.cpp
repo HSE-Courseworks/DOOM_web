@@ -23,7 +23,7 @@ Color changeLightness(const Color& color, const int delta)
     return {r, g, b, 255};
 }
 
-float constrainAngle360(float angle) 
+double constrainAngle360(const double angle) 
 {
     return std::fmod(std::fmod(angle, 360.0) + 360.0, 360.0);
 }
