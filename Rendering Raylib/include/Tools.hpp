@@ -28,11 +28,12 @@ const Color colorEarth = {31, 25, 16, 255};
 const Color softYellow = { 174, 194, 45, 255 }; 
 const Color tintText = { 255, 255, 255, 255 };
 const Color darkGray = { 30, 30, 30, 255 };
+const Color flashlight = { 59, 64, 61, 255 };
 
 float getDist2Points(const Vector2& v1, const Vector2& v2);
 float DegToRad(const float angle);
 float RadToDeg(const float angle);
-float constrainAngle360(float angle);
+double constrainAngle360(const double angle);
 Color changeLightness(const Color& color, const int delta);
 
 #endif 

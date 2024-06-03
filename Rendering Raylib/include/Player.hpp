@@ -21,8 +21,7 @@
 #define LIMIT (10e-3)
 #define VIEW_ANGLE (60)
 #define COUNT_POINTS (640)
-#define REAL_HEIGHT_WALL (100)
-#define REAL_HEIGHT_PLAYER (75)
+#define REAL_HEIGHT (100)
 #define DIST_SCREEN (COUNT_POINTS / (2 * tan(DegToRad(VIEW_ANGLE))))
 #define KOEF_SPEED (25)
 #define BLOCK (3)
@@ -47,10 +46,15 @@
 #define INFO_NICK_X (10)
 #define INFO_NICK_Y (280)
 
-enum RAY_INFO { DIST, SHIFT_SPRITE, NUM_RAY, TEXTURE, SIZE_OBJ, ID };
+#define RADIUS (2.0f)
+#define TEXTURE_SIZE (128)
+#define COUNT_STAGES (5)
+#define DELAY (10)
+
+enum RAY_INFO { DIST, ROTATION, POS, SHIFT_SPRITE, NUM_RAY, TEXTURE, ID, STAGE_MOV };
 
 using RayInfo = std::pair<float, Vector2>;
-using DrawInfo3D = std::tuple<float, float, int, const Texture2D*, float, int>;
+using DrawInfo3D = std::tuple<float, float, Vector2, float, int, const Texture2D*, int, int>;
 
 struct Hash
 {
@@ -67,18 +71,19 @@ struct Equal
         return lhs.x == rhs.x && lhs.y == rhs.y;
     }
 };
+
 class Player
 {
 public:
     Player() = default;
-    Player(const Vector2& size, const Vector2& pos, const float angle, 
-            const Color& color, const std::string& texture, const std::string& nickName);
+    Player(const Vector2& pos, const float angle, const Color& color, const std::string& texture, const std::string& nickName);
     void show(const Vector2& shift) const;
     void updatePosition(const Map& gameMap, const std::unordered_map<int, Player>& players, const float delta);
     void rotate(const float speed);
     float getRotation() const;
     const Vector2 getPosition() const;
     const Vector2 getSize() const;
+
 
     void showScope() const;
 	void show3DViewInWindow() const; 
@@ -116,7 +121,7 @@ private:
     Weapon gun;
     DrawInfo3D centerObj;
     std::unordered_set<int> detectedEnemy;
-    Rectangle object; Color color;
+    Color color;
     Texture2D texturePlayer;
     std::unordered_map<Vector2, float, Hash, Equal> mapDir;
     float sightDist, rotationAngle;
@@ -126,16 +131,17 @@ private:
     float mapShiftX, mapShiftY;
     std::vector<DrawInfo3D> drawInfo;
     bool map = true, isLogEnabled = false, scoreTable = false;
+    bool isMoving = false; int stageMoving = 0;
     Font font;
     Texture2D healthTexture, armorTexture;
     Rectangle backGroundH, backGroundA;
     Sound soundInjury;
     std::unordered_set<int> whoDmg;
 
-    void detectCollision(const std::vector<const Rectangle*>& objects, Vector2& delta);
-    Vector2 getCrossPoint(const int& numberSide, const std::vector<Vector2>& points, const float k, const float b) const;
+    void detectCollision(const std::vector<Rectangle>& objects, Vector2& delta);
+    Vector2 getCrossPoint(const std::vector<Vector2>& points) const;
     RayInfo getRayDistEnv(const Map& gameMap, const float angle, float& shiftX) const;
-    float getRayDistPlayer(const Player* player, const float& k, const float& b, float& shiftX) const;
+    float getRayDistPlayer(const Player* player, const double k, const double b) const;
     RayInfo getIntersection(const Map& gameMap, Vector2& p, const Vector2& dp) const;
     void calcRayDistEnv(const Map& gameMap);
     void calcRayDistPlayers(const std::vector<Player*>& opponents);
