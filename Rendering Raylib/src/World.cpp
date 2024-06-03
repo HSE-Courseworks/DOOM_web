@@ -1,10 +1,10 @@
 #include "World.hpp"
 
 World::World(const std::string& map, const std::string& textures) : 
-    gameMap(map), timer(120), scoreTable(), players(), vecId(), curPlayer(-1), lastFreeId(1)
+    gameMap(map), timer(600), scoreTable(), players(), vecId(), curPlayer(-1), lastFreeId(1)
 {
-    gameMap.findObjects();
     gameMap.readTextures(textures);
+    gameMap.findObjects();
     floor.width = GetRenderWidth();
     floor.height = GetRenderHeight() / 2.0f;
     floor.x = 0;
@@ -79,9 +79,29 @@ void World::updateWorld(const float speed)
         auto infoShoot = curPlayerObj->getInfoCenterObject();
         int damage = curPlayerObj->getGun().shoot(infoShoot);
         curPlayerObj->setLastTimeShoot(timer.getLeftSeconds());
-        if (infoShoot.second && damage) players[infoShoot.second].takeDamage(damage, curPlayerObj->getId(), scoreTable);
+        if (infoShoot.second > 0 && damage) players[infoShoot.second].takeDamage(damage, curPlayerObj->getId(), scoreTable);
     }
     if (IsKeyReleased(KEY_R)) curPlayerObj->getGun().reload();
+
+    if (IsKeyReleased(KEY_E)) {
+        auto [dist, idObj] = curPlayerObj->getInfoCenterObject();
+        if (idObj >= 0 || dist >= MAX_DIST_TO_GET) return;
+
+        if (idObj >= -COUNT_PICKUP_CATEG) 
+            curPlayerObj->updateArmor(gameMap.pickUps[idObj + COUNT_PICKUP_ALL].getHowMuchAdd());
+        else if (idObj >= -COUNT_PICKUP_CATEG * 2)
+            curPlayerObj->getGun().updateAmmunition(gameMap.pickUps[idObj + COUNT_PICKUP_ALL].getHowMuchAdd());
+        else
+            curPlayerObj->updateHP(gameMap.pickUps[idObj + COUNT_PICKUP_ALL].getHowMuchAdd());    
+
+        gameMap.pickUps[idObj + COUNT_PICKUP_ALL].setFlagActive(false);
+        gameMap.pickUps[idObj + COUNT_PICKUP_ALL].setTimeGet(timer.getLeftSeconds());
+    }
+
+    for (auto& pickup : gameMap.pickUps) {
+        if (!pickup.getFlagActive() && pickup.getTimeGet() - timer.getLeftSeconds() == TIME_REBIRTH)
+            pickup.setFlagActive(true);
+    }
 }
 
 void World::showMiniMap() const {
@@ -103,6 +123,16 @@ void World::showMiniMap() const {
         if (std::pow(curPlayerPos.x - posOpp.x, 2) + std::pow(curPlayerPos.y - posOpp.y, 2)
             <= std::pow(SIZE_PIXEL_MAP / 2, 2) && players.at(curIdPlayer).getDetectedEnemy().contains(id)) {
             player.show(mapPos);
+        }
+    }
+
+    for (auto& pickup : gameMap.pickUps) {
+        if (!pickup.getFlagActive()) continue;
+
+        Vector2 posPick = pickup.getPosition();
+        if (std::pow(curPlayerPos.x - posPick.x, 2) + std::pow(curPlayerPos.y - posPick.y, 2)
+            <= std::pow(SIZE_PIXEL_MAP / 2, 2)) {
+            pickup.show(mapPos);
         }
     }
 }
@@ -134,6 +164,11 @@ void World::showMap() const {
             <= std::pow(SIZE_PIXEL_MAP / 2, 2) && players.at(curIdPlayer).getDetectedEnemy().contains(id)) {
             player.show(shift);
         }
+    }
+
+    for (auto& pickup : gameMap.pickUps) {
+        if (!pickup.getFlagActive()) continue;
+        pickup.show(shift);
     }
 }
 

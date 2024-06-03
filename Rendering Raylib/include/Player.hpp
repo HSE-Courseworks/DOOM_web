@@ -101,6 +101,8 @@ public:
     float getMapShiftY() const;
     void setLastTimeShoot(int time);
     int getLastTimeShoot() const;
+    void updateHP(int cntHp);
+    void updateArmor(int cntArmor);
     std::string getNickName() const;
     void setNickName(const std::string& newNickName);
     void showNickName() const;
@@ -135,16 +137,18 @@ private:
     Font font;
     Texture2D healthTexture, armorTexture;
     Rectangle backGroundH, backGroundA;
-    Sound soundInjury;
+    Sound soundInjury, soundGetHp, soundGetArmor, soundHit;
     std::unordered_set<int> whoDmg;
 
     void detectCollision(const std::vector<Rectangle>& objects, Vector2& delta);
     Vector2 getCrossPoint(const std::vector<Vector2>& points) const;
     RayInfo getRayDistEnv(const Map& gameMap, const float angle, float& shiftX) const;
-    float getRayDistPlayer(const Player* player, const double k, const double b) const;
+    float getRayDistObject(const Vector2& position, const double k, const double b) const;
     RayInfo getIntersection(const Map& gameMap, Vector2& p, const Vector2& dp) const;
     void calcRayDistEnv(const Map& gameMap);
     void calcRayDistPlayers(const std::vector<Player*>& opponents);
+    void calcRayDistPickUps(const std::vector<PickUp>& pickups);
+    std::pair<float, float> calcAngleFOVObject(const float radius, const Vector2& position);
 };
 
 #endif 

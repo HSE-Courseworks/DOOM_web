@@ -8,6 +8,8 @@
 #include "Timer.hpp"
 #include "ScoreTable.hpp"
 
+#define MAX_DIST_TO_GET (60)
+
 class World
 {
 public:

@@ -1,8 +1,7 @@
 #include "Weapon.hpp"
 
-Weapon::Weapon(const std::string& gun, int cartridges, int oneClip, int maxCartridges, int damage) :
-    actions(), cartridges(cartridges), oneClip(oneClip), maxCartridges(maxCartridges),
-    curCartridge(oneClip), damage(damage)
+Weapon::Weapon(const std::string& gun, int cartridges, int oneClip, int damage) :
+    actions(), cartridges(cartridges), oneClip(oneClip), curCartridge(oneClip), damage(damage)
 {
     cartridgesTexture = LoadTexture("resources/cartridges.png");
     redScope = LoadTexture("resources/scope.png");
@@ -12,6 +11,7 @@ Weapon::Weapon(const std::string& gun, int cartridges, int oneClip, int maxCartr
     soundShoot = LoadSound("resources/shoot.mp3");
     soundReload = LoadSound("resources/reload.mp3");
     soundEmpty = LoadSound("resources/empty.mp3");
+    soundGet = LoadSound("resources/getCartridges.mp3");
 
     std::vector<std::string> files = {"/shootRight.png", "/shootLeft.png", "/reloadLeft.png", "/reloadRight.png"};
     for (size_t i = 0; i < files.size(); ++i) {
@@ -62,12 +62,18 @@ void Weapon::showAmmunition() const
     DrawRectangleLinesEx(bgCarts, THICKNESS_FRAME, BLACK);
     DrawTexture(cartridgesTexture, CARTRIDGES_X + THICKNESS_FRAME, CARTRIDGES_Y + THICKNESS_FRAME, WHITE);
 
-    const char *textInfo = TextFormat("%i/%i", curCartridge, cartridges - curCartridge);
+    const char *textInfo = TextFormat("%i/%i", curCartridge, cartridges);
 	Vector2 bounds = MeasureTextEx(font, textInfo, 30, 0);
     Rectangle bgInfo = {INFO_CART_X, INFO_CART_Y, 3 * THICKNESS_FRAME + bounds.x, 3 * THICKNESS_FRAME + bounds.y};
     DrawRectangleRec(bgInfo, GRAY);
     DrawRectangleLinesEx(bgInfo, THICKNESS_FRAME, BLACK);
     DrawTextEx(font, textInfo, {INFO_CART_X + 1.5 * THICKNESS_FRAME, INFO_CART_Y + 2 * THICKNESS_FRAME}, 30, 0, BLACK);
+}
+
+void Weapon::updateAmmunition(int cntCartridges) {
+    cartridges = std::min(cartridges + cntCartridges, MAX_CARTRIDGES);
+    SetSoundVolume(soundGet, VOLUME * 2);
+    PlaySound(soundGet);
 }
 
 int Weapon::shoot(std::pair<float, int> infoShoot) 
@@ -81,19 +87,21 @@ int Weapon::shoot(std::pair<float, int> infoShoot)
     }
 
     int dmg = std::max(0, damage - static_cast<int>(infoShoot.first / SCALE_DAMAGE));
-    curCartridge--; cartridges--;
+    curCartridge--;
     SetSoundVolume(soundShoot, VOLUME);
     PlaySound(soundShoot);
 
     isShooting = true;
-    if (dmg != 0 && infoShoot.second) hitTarget = true;
+    if (dmg != 0 && infoShoot.second > 0) {
+        hitTarget = true;
+    }
     // Запустить анимацию выстрела
     return dmg;
 }
 
 void Weapon::reload()
 {
-    if (isShooting || isReloading || curCartridge == oneClip || cartridges - curCartridge == 0) 
+    if (isShooting || isReloading || curCartridge == oneClip || cartridges == 0) 
         return;
 
     SetSoundVolume(soundReload, VOLUME);
@@ -120,7 +128,9 @@ void Weapon::updateNextFrameReload()
     int idx = actions.size() - 1 - leftHand;
     if (curFrameReload >= animFrames[idx].first * animFrames[idx].second) { 
         curFrameReload = 0;
-        curCartridge = std::min(oneClip, cartridges);  
+        cartridges += curCartridge;
+        curCartridge = std::min(oneClip, cartridges);
+        cartridges -= curCartridge;
         isReloading = false;
     }
     else curFrameReload++;

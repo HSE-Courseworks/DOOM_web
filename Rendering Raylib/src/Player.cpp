@@ -1,7 +1,7 @@
 #include "Player.hpp"
 
 Player::Player(const Vector2& pos, const float angle, const Color& color, const std::string& texture, const std::string& nickName) : 
-    nickName(nickName), gun("resources/guns/glock", 200, 20, 200, 10), color(color), sightDist(SIZE_PIXEL_MAP * 3), rotationAngle(angle),
+    nickName(nickName), gun("resources/guns/glock", 100, 20, 10), color(color), sightDist(SIZE_PIXEL_MAP * 3), rotationAngle(angle),
     FOV(VIEW_ANGLE), circlePoints(COUNT_POINTS), segment(COUNT_POINTS), drawInfo()
 {
     texturePlayer = LoadTexture(texture.c_str());
@@ -12,6 +12,8 @@ Player::Player(const Vector2& pos, const float angle, const Color& color, const 
     backGroundH = {HEALTH_X, HEALTH_Y, BUFFS_SIZE + 2 * THICKNESS_FRAME, BUFFS_SIZE + 2 * THICKNESS_FRAME};
     backGroundA = {ARMOR_X, ARMOR_Y, BUFFS_SIZE + 2 * THICKNESS_FRAME, BUFFS_SIZE + 2 * THICKNESS_FRAME};
     soundInjury = LoadSound("resources/injury.mp3");
+    soundGetHp = LoadSound("resources/getHP.mp3");
+    soundGetArmor = LoadSound("resources/getArmor.mp3");
 
     cameraPos.x = pos.x;
     cameraPos.y = pos.y; 
@@ -139,7 +141,6 @@ const Vector2 Player::getPosition() const
 
 const Vector2 Player::getSize() const
 {
-    //return {object.width, object.height};
     return {2 * RADIUS, 2 * RADIUS};
 }
 
@@ -177,6 +178,18 @@ void Player::setLastTimeShoot(int time) {
 
 int Player::getLastTimeShoot() const {
     return lastTimeShoot;
+}
+
+void Player::updateHP(int cntHp) {
+    hp = std::min(hp + cntHp, 100);
+    SetSoundVolume(soundGetHp, VOLUME * 2);
+    PlaySound(soundGetHp);
+}
+
+void Player::updateArmor(int cntArmor) {
+    armor = std::min(armor + cntArmor, 100);
+    SetSoundVolume(soundGetArmor, VOLUME * 2);
+    PlaySound(soundGetArmor);
 }
 
 void Player::setId(int id)
@@ -219,13 +232,11 @@ Color Player::getColor() const {
     return color;
 }
 
-const Weapon& Player::getGun() const 
-{
+const Weapon& Player::getGun() const {
     return gun;
 }
 
-Weapon& Player::getGun()
-{
+Weapon& Player::getGun() {
     return gun;
 }
 
@@ -332,7 +343,14 @@ void Player::showLog() const
     float distToObj; int objId;
     std::tie(distToObj, std::ignore, std::ignore, std::ignore, 
             std::ignore, std::ignore, objId, std::ignore) = centerObj;
-    std::string obj = (objId == 0 ? "WALL" : ("PLAYER, ID: " + std::to_string(objId)));
+    std::string obj;
+    if (objId == 0) obj = "WALL";
+    else if (objId > 0) obj = "PLAYER, ID: " + std::to_string(objId);
+    else {
+        if (objId >= -COUNT_PICKUP_CATEG) obj = "ARMOR";
+        else if (objId >= -COUNT_PICKUP_CATEG * 2) obj = "CARTRIDGES";
+        else obj = "HEALTH";
+    }
 
     stream.str(std::string());
     stream << "Information about direct object:\n\n\t Seen: " << obj << "\n\n\t Distance: " 
@@ -343,13 +361,14 @@ void Player::showLog() const
 RayInfo Player::getIntersection(const Map& gameMap, Vector2& p, const Vector2& dp) const
 {
     int total = gameMap.getMazeSize().x, mapX = 0, mapY = 0;
+    std::string notObstacles(".ACH");
     for (int cnt = 0; cnt < total; ++cnt)
     {
         mapX = (p.y - gameMap.getFrame().y) / gameMap.getWallSize().y;
         mapY = (p.x - gameMap.getFrame().x) / gameMap.getWallSize().x;
 
         if (mapX >= 0 && mapX < gameMap.getMazeSize().x && mapY >= 0 &&
-            mapY < gameMap.getMazeSize().y && gameMap.scheme[mapX][mapY] != '.')
+            mapY < gameMap.getMazeSize().y && notObstacles.find(gameMap.scheme[mapX][mapY]) == std::string::npos)
         {
             return { getDist2Points(cameraPos, p), {(float)mapX, (float)mapY} };
             break;
@@ -449,11 +468,11 @@ Vector2 Player::getCrossPoint(const std::vector<Vector2>& points) const
              ? points.front() : points.back();
 }
 
-float Player::getRayDistPlayer(const Player* player, const double k, const double b) const
+float Player::getRayDistObject(const Vector2& position, const double k, const double b) const
 {
     std::vector<Vector2> points; const double eps = 1e-2;
-    double posPlayerX = player->getPosition().x;
-    double posPlayerY = player->getPosition().y;
+    double posPlayerX = position.x;
+    double posPlayerY = position.y;
 
     double aVal = 1.0 + k * k;
     double bVal = -2.0 * posPlayerX + 2.0 * k * b - 2.0 * k * posPlayerY;
@@ -518,7 +537,7 @@ void Player::updateSegment()
         if (setRays.find(j) != setRays.end()) continue;
 
         if (j == circlePoints / 2 - 1) centerObj = *iter;
-        if (curId && !detectedEnemy.contains(curId)) detectedEnemy.insert(curId);
+        if (curId > 0 && !detectedEnemy.contains(curId)) detectedEnemy.insert(curId);
 
         setRays.insert(j);
         float curDist = std::get<RAY_INFO::DIST>(*iter) / cos(DegToRad(deltaAngle * j - FOV / 2));
@@ -532,12 +551,35 @@ void Player::updateSegment()
     }
 }
 
+std::pair<float, float> Player::calcAngleFOVObject(const float radius, const Vector2& position) {
+    double eps = 2e-1;
+    double aVal = getDist2Points(cameraPos, position); // O1O2
+    double bVal = getDist2Points(cameraPos, {cameraPos.x + 1, cameraPos.y}); // O1K
+    double cVal = getDist2Points(position, {cameraPos.x + 1, cameraPos.y}); // O2K
+
+    // c ^ 2 = a ^ 2 + b ^ 2 - 2 * a * b * cosC;
+    // cosC = (a ^ 2 + b ^ 2 - c ^ 2) / (2 * a * b);
+    double centerAngle = 0;
+    if (aVal < bVal + cVal && bVal < aVal + cVal && cVal < aVal + bVal) {
+        centerAngle = RadToDeg(std::acos((aVal * aVal + bVal * bVal - cVal * cVal) / (2 * aVal * bVal)));
+        if (cameraPos.y > position.y) centerAngle = 360.0 - centerAngle;
+    }
+    else if (cameraPos.x > position.x) centerAngle = 180.0;
+
+    double delta = RadToDeg(std::asin(radius / aVal));
+    double startAngle = constrainAngle360(centerAngle - delta - eps);
+    double angleFOV = 2 * delta + 2 * eps;
+
+    return {startAngle, angleFOV};
+}
+
 void Player::calculateRayDistances(const Map& gameMap, const std::vector<Player*>& opponents) 
 {
     drawInfo.clear();
     detectedEnemy.clear();
     calcRayDistEnv(gameMap);
     calcRayDistPlayers(opponents);
+    calcRayDistPickUps(gameMap.pickUps);
 }
 
 void Player::show3DViewInWindow() const
@@ -550,7 +592,7 @@ void Player::show3DViewInWindow() const
         std::tie(curDist, opp_rot, opp_pos, shiftX, j, sprite, curId, stage) = *iter;
 
         float spriteAngle = 0;
-        if (curId && opp_pos.x - cameraPos.x)
+        if (curId > 0 && opp_pos.x - cameraPos.x)
         {
             float angleDistOX = constrainAngle360(RadToDeg(std::atan2(opp_pos.y - cameraPos.y, opp_pos.x - cameraPos.x))); 
             // Арктангенс тангенса угла наклона между прямой Ox и вектором расстояния между игроками = угол между ними
@@ -565,11 +607,11 @@ void Player::show3DViewInWindow() const
         wall.x = j * widthWall;
         wall.y = curId ? (GetRenderHeight() / 2.0f - heightWall / 2.5f) : (GetRenderHeight() - heightWall) / 2.0f;
 
-        crop.x = curId ? (int)(TEXTURE_SIZE * std::floor(spriteAngle / frameAngle) + TEXTURE_SIZE * shiftX) 
+        crop.x = (curId > 0) ? (int)(TEXTURE_SIZE * std::floor(spriteAngle / frameAngle) + TEXTURE_SIZE * shiftX) 
                        : (int)(sprite->width * shiftX);
-        crop.y = curId ? (stage / DELAY) * TEXTURE_SIZE : 0;
-        crop.width = curId ? (int)(TEXTURE_SIZE / circlePoints) : (int)(sprite->width / circlePoints);
-        crop.height = curId ? TEXTURE_SIZE : sprite->height;
+        crop.y = (curId > 0) ? (stage / DELAY) * TEXTURE_SIZE : 0;
+        crop.width = (curId > 0) ? (int)(TEXTURE_SIZE / circlePoints) : (int)(sprite->width / circlePoints);
+        crop.height = (curId > 0) ? TEXTURE_SIZE : sprite->height;
 
         Color tint = changeLightness(lightGray, std::min(0.0f, -curDist));
         DrawTexturePro(*sprite, crop, wall, {0, 0}, 0, tint);
@@ -580,36 +622,21 @@ void Player::calcRayDistPlayers(const std::vector<Player*>& opponents)
 {
     float curAngle = rotationAngle - FOV / 2;
     float deltaAngle = (float)FOV / circlePoints;
+
     for (int i = 0; i < circlePoints; ++i)
     {
         double k = std::tan(DegToRad(curAngle));
         double b = cameraPos.y - k * cameraPos.x;
-        float curDist = sightDist; double curShiftX = 0; int chosen = -1;
 
-        double curAngleViewPlayer = 0; const double eps = 2e-1;
+        double curAngleViewPlayer = 0, curShiftX = 0; float curDist = sightDist;  int chosen = -1;
         for (size_t j = 0; j < opponents.size(); ++j) {
 
-            double aVal = getDist2Points(cameraPos, opponents[j]->getPosition()); // O1O2
-            double bVal = getDist2Points(cameraPos, {cameraPos.x + 1, cameraPos.y}); // O1K
-            double cVal = getDist2Points(opponents[j]->getPosition(), {cameraPos.x + 1, cameraPos.y}); // O2K
+            auto [startAngle, angleViewPlayer] = calcAngleFOVObject(RADIUS, opponents[j]->cameraPos);
+            float rayDist = getRayDistObject(opponents[j]->getPosition(), k, b);
 
-            // c ^ 2 = a ^ 2 + b ^ 2 - 2 * a * b * cosC;
-            // cosC = (a ^ 2 + b ^ 2 - c ^ 2) / (2 * a * b);
-            double centerAngle = 0;
-            if (aVal < bVal + cVal && bVal < aVal + cVal && cVal < aVal + bVal) {
-                centerAngle = RadToDeg(std::acos((aVal * aVal + bVal * bVal - cVal * cVal) / (2 * aVal * bVal)));
-                if (cameraPos.y > opponents[j]->getPosition().y) centerAngle = 360.0 - centerAngle;
-            }
-            else if (cameraPos.x > opponents[j]->getPosition().x) centerAngle = 180.0;
-
-            double delta = RadToDeg(std::asin(RADIUS / aVal));
-            double startAngle = constrainAngle360(centerAngle - delta - eps);
-            double angleViewPlayer = 2 * delta + 2 * eps;
-
-            float rayDist = getRayDistPlayer(opponents[j], k, b);
             if (rayDist < curDist) {
-                curShiftX = constrainAngle360(curAngle) > startAngle ? constrainAngle360(curAngle) - startAngle 
-                            : 360.0 - startAngle + constrainAngle360(curAngle);
+                curShiftX = constrainAngle360(curAngle) > startAngle ? 
+                constrainAngle360(curAngle) - startAngle : 360.0 - startAngle + constrainAngle360(curAngle);
                 curAngleViewPlayer = angleViewPlayer;
                 curDist = rayDist; chosen = j;
             }
@@ -639,6 +666,40 @@ void Player::calcRayDistEnv(const Map& gameMap)
 
         char type = gameMap.scheme[cur.second.x][cur.second.y];
         drawInfo.push_back(std::make_tuple(cur.first, -1, Vector2(0, 0), shiftX / sizeWall, i, gameMap.getTexture(type), 0, 0));
+        curAngle += deltaAngle;
+    }
+}
+
+void Player::calcRayDistPickUps(const std::vector<PickUp>& pickups) {
+    float curAngle = rotationAngle - FOV / 2;
+    float deltaAngle = (float)FOV / circlePoints;
+
+    for (int i = 0; i < circlePoints; ++i)
+    {
+        double k = std::tan(DegToRad(curAngle));
+        double b = cameraPos.y - k * cameraPos.x;
+
+        double curAngleViewPickUp = 0, curShiftX = 0; float curDist = sightDist; int chosen = -1;
+        for (size_t j = 0; j < pickups.size(); ++j) {
+
+            if (!pickups[j].getFlagActive()) continue;
+
+            auto [startAngle, angleViewPickUp] = calcAngleFOVObject(pickups[j].getRadius(), pickups[j].getPosition());
+            float rayDist = getRayDistObject(pickups[j].getPosition(), k, b);
+
+            if (rayDist < curDist) {
+                curShiftX = constrainAngle360(curAngle) > startAngle ? 
+                constrainAngle360(curAngle) - startAngle : 360.0 - startAngle + constrainAngle360(curAngle);
+                curAngleViewPickUp = angleViewPickUp;
+                curDist = rayDist; chosen = j;
+            }
+        }
+
+        if (std::fabs(sightDist - curDist) > 1e-9) {
+            curDist *= cos(DegToRad(deltaAngle * i - FOV / 2));
+            drawInfo.push_back(std::make_tuple(curDist, -1, Vector2(0, 0), curShiftX / curAngleViewPickUp,
+                                               i, pickups[chosen].getTexture(), chosen - COUNT_PICKUP_ALL, 0));
+        }
         curAngle += deltaAngle;
     }
 }
