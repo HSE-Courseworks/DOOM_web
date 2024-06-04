@@ -46,9 +46,9 @@
                     </div>
 
                     <label>Email address</label>
-                    <input class="one-line" type="email">
+                    <input id="emailField" class="one-line" type="email">
 
-                    <button type="button">Log In</button>
+                    <button onclick="checkEmail()" type="button">Log In</button>
                 </form>
             </div>
             
@@ -68,7 +68,8 @@
 
     <script>
         function checkEmail() {
-            let email = document.querySelector()
+            let email = document.querySelector("#emailField").value;
+            if (!email.includes('@') || !email.includes('.')) alert("Incorrect email address")
         }
     </script>
 
