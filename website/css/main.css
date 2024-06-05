@@ -174,25 +174,23 @@ html {
 .some-info {
     background: black;
     width: 100%;
-    height: 2450px;
+    padding-bottom: 1000px;
 }
 
 .some-info .pictures {
-    position: relative;
-    height: 1100px;
+    padding-bottom: 800px;
 }
 
 .some-info .pictures .img1 {
     position: relative;
-    top: 100px;
-    left: 70px;
+    padding-top: 60px;
     width: 50%;
 }
 
 .some-info .pictures .img2 {
-    position: relative;
+    position: absolute;
     width: 50%;
-    top: 200px;
+    top: 1400px;
     left: 550px;
 }
 
@@ -205,9 +203,9 @@ html {
 .some-info .about-us p {
     font-size: 24px;
     text-align: right;
+    float: right;
     width: 636px;
     margin: 50px 0;
-    position: relative;
     padding-right: 30px;
     right: -510px;
 }
@@ -215,6 +213,7 @@ html {
 .some-info .about-us .block {
     display: flex;
     justify-content: space-around;
+    padding-bottom: 30px;
 }
 
 .some-info .about-us .block a {
@@ -233,39 +232,41 @@ html {
 }
 
 .some-info .about-us .first {
-    position: relative;
-    top: -500px;
+    position: absolute;
+    top: 2156px;
     width: 435px;
 }
 
 .some-info .about-us .second {
-    position: relative;
-    top: -400px;
+    position: absolute;
+    top: 2441px;
     width: 346px;
 }
 
 .some-info .about-us .third {
-    position: relative;
-    top: -300px;
+    position: absolute;
+    top: 2726px;
     width: 367px;
 }
 
 .some-info .about-us .fourth {
-    position: relative;
-    top: -515px;
+    position: absolute;
+    top: 2726px;
     width: 345px;
     left: 700px
 }
 
+
+
 .some-info .about-us .fifth {
-    position: relative;
-    top: -420px;
+    position: absolute;
+    top: 3011px;
     width: 418px;
 }
 
 .some-info .about-us .sixth {
-    position: relative;
-    top: -635px;
+    position: absolute;
+    top: 3011px;
     width: 412px;
     left: 700px
 }
@@ -274,7 +275,7 @@ footer .inf {
     display: flex;
     justify-content: space-around;
     padding-top: 130px;
-    padding-bottom: 50px;
+    padding-bottom: 30px;
 }
 
 footer .inf .logo {
@@ -296,7 +297,7 @@ footer .inf a {
 
 footer p {
     padding-top: 40px;
-    padding-bottom: 165px;
+    padding-bottom: 120px;
     text-align: center;
 }
 
@@ -315,7 +316,7 @@ footer p {
 .ref-sequence {
     text-align: center;
     font-size: 16px;
-    margin: 40px 0;
+    padding: 40px 0;
 }
 
 .ref-sequence a {
@@ -356,7 +357,7 @@ footer p {
 
 .registration form .inline {
     display: flex;
-    justify-content: space-around;
+    justify-content: space-between;
 }
 
 .registration form .inline > div {
@@ -402,3 +403,9 @@ footer p {
     background: #957265;
 }
 
+.game p {
+    font-size: 33px;
+    font-weight: 700;
+    text-align: center;
+    padding-bottom: 40px;
+}
