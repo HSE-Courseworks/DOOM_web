@@ -194,6 +194,10 @@ html {
     left: 550px;
 }
 
+.some-info .about-us {
+    padding-bottom: 100px;
+}
+
 .some-info .about-us h1 {
     font-size: 50px;
     text-align: right;
@@ -274,7 +278,7 @@ html {
 footer .inf {
     display: flex;
     justify-content: space-around;
-    padding-top: 130px;
+    padding-top: 100px;
     padding-bottom: 30px;
 }
 
@@ -343,6 +347,20 @@ footer p {
     padding: 70px 0;
 }
 
+.registration .line1 {
+    position: absolute;
+    top: 430px;
+    left: 195px;
+    z-index: 1;
+}
+
+.registration .line2 {
+    position: absolute;
+    top: 724px;
+    left: -1px;
+    z-index: 1;
+}
+
 .registration h1 {
     font-size: 30px;
     text-align: center;
@@ -351,8 +369,10 @@ footer p {
 }
 
 .registration form {
+    position: relative;
     margin: 80px auto;
     width: 500px;
+    z-index: 2;
 }
 
 .registration form .inline {
@@ -407,5 +427,17 @@ footer p {
     font-size: 33px;
     font-weight: 700;
     text-align: center;
-    padding-bottom: 40px;
+    padding-bottom: 100px;
+}
+
+.emscripten_border {
+    zoom: 50%;
+    padding-bottom: 300px;
+    display: flex;
+    justify-content: space-around;
+}
+
+.emscripten_border canvas {
+    margin-top: 30px;
+    margin-inline: auto;
 }
