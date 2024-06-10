@@ -9,7 +9,8 @@ void Fps::show() const
 {
 	const char *textFps = TextFormat("%i FPS", GetFPS());
 	Vector2 bounds = MeasureTextEx(font, textFps, FONT_SIZE, SPACING);
-	Vector2 posFPS = {GetRenderWidth() - SHIFT_X - bounds.x, SHIFT_Y};
-	DrawRectangle(posFPS.x - 5, posFPS.y - 5, bounds.x + 10, bounds.y + 5, softGray);
+	Vector2 posFPS = {GetRenderWidth() - 3.0f / 2.0f * SHIFT_X - bounds.x, 3.0f / 2.0f * SHIFT_Y};
+	DrawRectangle(posFPS.x - 0.5 * SHIFT_X, posFPS.y - 0.5 * SHIFT_Y, 
+				  bounds.x + 3.0f / 2.0f * SHIFT_X, bounds.y + 0.5 * SHIFT_Y, softGray);
 	DrawTextEx(font, textFps, posFPS, FONT_SIZE, SPACING, tintText);
 }

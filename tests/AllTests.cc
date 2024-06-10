@@ -4,14 +4,42 @@
 #include "../Rendering Raylib/include/Player.hpp"
 #include "../Rendering Raylib/include/World.hpp"
 #include "../Rendering Raylib/include/Weapon.hpp"
+#include "../Rendering Raylib/include/Timer.hpp"
+#include "../Rendering Raylib/include/ScoreTable.hpp"
+#include "../Rendering Raylib/include/PickUp.hpp"
 #include "raylib.h"
 #include <fstream>
 
+
+// TIMER FUNCTIONS
+Timer::Timer(const int time) : time(time) {
+    backGround = {TIMER_X, TIMER_Y, TIMER_SIZE_X, TIMER_SIZE_Y};
+    prevTime = GetTime();
+}
+
+// SCORETABLE FUNCTIONS
+ScoreTable::ScoreTable() : gameInfoPlayers() {
+    inscriptions = {"Player", "K", "S", "D", "DMG", "KD"};
+    frame = {SCORE_X, SCORE_Y, TABLE_SIZE_X, TABLE_SIZE_Y};
+}
+
+// PICKUP FUNTIONS
+PickUp::PickUp(char symbol, const float radius, const Vector2& pos, Texture* texture)
+    : symbol(symbol), radius(radius), isActive(true), timeGet(0), texture(texture), position(pos) {}
+
+PickUp::PickUp(const PickUp& other) {
+    symbol = other.symbol;
+    radius = other.radius;
+    position = other.position;
+    isActive = other.isActive;
+    timeGet = other.timeGet;
+    texture = other.texture;
+}
+
 // MAP FUNCTIONS
 Map::Map(const std::string& filename) : 
-    scheme(), objects(), textures(), colors()
+    scheme(), objects(), pickUps(COUNT_PICKUP_ALL), textures(), colors()
 {
-    std::cout << 1;
     frame.width = SIZE_PIXEL_MAP; frame.height = SIZE_PIXEL_MAP;
     frame.x = THICKNESS_MAP * 2; frame.y = THICKNESS_MAP * 2;
 
@@ -22,10 +50,10 @@ Map::Map(const std::string& filename) :
         scheme.push_back(mazeLine);
     }
     file.close();
-    mazeSize.x = scheme.front().size();
-    mazeSize.y = scheme.size();      
-    wallSize.x = SIZE_PIXEL_MAP / mazeSize.x;
-    wallSize.y = SIZE_PIXEL_MAP / mazeSize.y;
+    mazeSize.x = scheme.front().size(); // Взять длину стенки миникарты
+    mazeSize.y = scheme.size();         // Взять ширину стенки миникарты
+    wallSize.x = WALL_SIZE;
+    wallSize.y = WALL_SIZE;
 }
 
 void Map::readTextures(const std::string &filename) 
@@ -45,13 +73,24 @@ void Map::readTextures(const std::string &filename)
 
 void Map::findObjects()
 {
-    Rectangle wall = {0, 0, wallSize.x, wallSize.y};    
+    Rectangle wall = {0, 0, wallSize.x, wallSize.y};
     int N = scheme.size(), M = scheme.front().size();
+    const float radius = 2.0f;
+
+    int posH = 0, posC = COUNT_PICKUP_CATEG, posA = COUNT_PICKUP_CATEG * 2;
     for (int i = 0; i < N; ++i)
     {
         for (int j = 0; j < M; ++j)
         {
-            if (scheme[i][j] != '.')
+            if (scheme[i][j] == 'H' || scheme[i][j] == 'C' || scheme[i][j] == 'A') {
+                float posX = frame.x + j * wallSize.x + WALL_SIZE / 2;
+                float posY = frame.y + i * wallSize.y + WALL_SIZE / 2;
+                PickUp pickup(scheme[i][j], radius, {posX, posY}, &textures[scheme[i][j]]);
+                if (scheme[i][j] == 'H') pickUps[posH++] = pickup;
+                else if (scheme[i][j] == 'C') pickUps[posC++] = pickup;
+                else pickUps[posA++] = pickup;
+            }
+            else if (scheme[i][j] != '.')
             {
                 wall.x = frame.x + j * wallSize.x;
                 wall.y = frame.y + i * wallSize.y;
@@ -87,7 +126,7 @@ struct MapTest : public testing::Test {
 TEST_F(MapTest, getWallSize)
 {
   Vector2 v1 = mt->getWallSize(), v2 = {4, 2};
-  EXPECT_FLOAT_EQ(getDist2Points(v1, v2), 7.2111025);
+  EXPECT_FLOAT_EQ(getDist2Points(v1, v2), 18.439089);
 }
 
 TEST_F(MapTest, getFrame)
@@ -112,31 +151,12 @@ TEST_F(MapTest, readTextures)
 }
 
 // PLAYER FUNCTIONS
-Player::Player(const Vector2& size, const Vector2& pos, const float angle, const Color& color, const std::string& texture) : 
-    gun("../../Rendering Raylib/resources/guns/glock", 200, 20, 200, 10), color(color), sightDist(SIZE_PIXEL_MAP * 3), rotationAngle(angle),
+Player::Player(const Vector2& pos, const float angle, const Color& color, const std::string& texture, const std::string& nickName) : 
+    nickName(nickName), color(color), sightDist(SIZE_PIXEL_MAP * 3), rotationAngle(angle),
     FOV(VIEW_ANGLE), circlePoints(COUNT_POINTS), segment(COUNT_POINTS), drawInfo()
 {
-    //texturePlayer = LoadTexture(texture.c_str());
-
-    //healthTexture = LoadTexture("../../Rendering Raylib/resources/health.png");
-	//font = LoadFontEx("../../Rendering Raylib/resources/Calibri.ttf", 30, nullptr, 0);
-    bgHealth = {HEALTH_X, HEALTH_Y, (float)healthTexture.width + 2 * THICKNESS_FRAME, 
-                (float)healthTexture.height + 2 * THICKNESS_FRAME};
-    //soundInjury = LoadSound("../../Rendering Raylib/resources/injury.mp3");
-
-    object.width = size.x; object.height = size.y;
     cameraPos.x = pos.x;
     cameraPos.y = pos.y; 
-    object.x = pos.x - object.width / 2.0f;
-    object.y = pos.y - object.height / 2.0f;
-    mapShiftX = pos.x - THICKNESS_MAP * 2;
-    mapShiftY = pos.y - THICKNESS_MAP * 2;
-
-    mapDir[{0, 0}] = 0.0f; mapDir[{1, 0}] = 0.0f;
-    mapDir[{1, 1}] = M_PI / 4; mapDir[{0, 1}] = M_PI / 2;
-    mapDir[{-1, 1}] = 3 * M_PI / 4; mapDir[{-1, 0}] = M_PI;
-    mapDir[{-1, -1}] = 5 * M_PI / 4; mapDir[{0, -1}] = 3 * M_PI / 2;
-    mapDir[{1, -1}] = 7 * M_PI / 4;
 }
 
 float Player::getRotation() const
@@ -151,12 +171,12 @@ const Vector2 Player::getPosition() const
 
 const Vector2 Player::getSize() const
 {
-    return {object.width, object.height};
+    return {2 * RADIUS, 2 * RADIUS};
 }
 
-bool Player::getFlagMiniMap() const
+bool Player::getFlagMap() const
 {
-	return miniMap;
+	return map;
 }
 
 bool Player::getFlagShowLog() const
@@ -179,30 +199,30 @@ struct PlayerTest : public testing::Test {
   Player *pt;
   Map *mt;
   void SetUp() { mt = new Map("../../Rendering Raylib/resources/maze.txt"); 
-                pt = new Player({mt->getWallSize().x / 4, mt->getWallSize().x / 4}, {3, 7}, 0, softRed, "../../Rendering Raylib/resources/player_1.png"); }
+                pt = new Player({5, 5}, 40, softRed, "../../Rendering Raylib/resources/player_1.png", "Ivan"); }
   void TearDown() { delete mt; delete pt; }
 };
 
 TEST_F(PlayerTest, getRotation)
 {
-  EXPECT_FLOAT_EQ(pt->getRotation(), 0);
+  EXPECT_FLOAT_EQ(pt->getRotation(), 40);
 }
 
 TEST_F(PlayerTest, getPosition)
 {
-  EXPECT_FLOAT_EQ(pt->getPosition().x, 3);
-  EXPECT_FLOAT_EQ(pt->getPosition().y, 7);
+  EXPECT_FLOAT_EQ(pt->getPosition().x, 5);
+  EXPECT_FLOAT_EQ(pt->getPosition().y, 5);
 }
 
 TEST_F(PlayerTest, getSize)
 {
-  EXPECT_FLOAT_EQ(pt->getSize().x, 2);
-  EXPECT_FLOAT_EQ(pt->getSize().y, 2);
+  EXPECT_FLOAT_EQ(pt->getSize().x, 4);
+  EXPECT_FLOAT_EQ(pt->getSize().y, 4);
 }
 
-TEST_F(PlayerTest, getFlagMiniMap)
+TEST_F(PlayerTest, getFlagMap)
 {
-  EXPECT_EQ(pt->getFlagMiniMap(), true);
+  EXPECT_EQ(pt->getFlagMap(), true);
 }
 
 TEST_F(PlayerTest, getFlagShowLog)
@@ -218,10 +238,10 @@ TEST_F(PlayerTest, SetAndgetId)
 
 // WORLD FUNCTIONS 
 World::World(const std::string& map, const std::string& textures) : 
-    gameMap(map), players(), vecId(), curPlayer(-1), lastFreeId(1)
+    gameMap(map), timer(600), scoreTable(), players(), vecId(), curPlayer(-1), lastFreeId(1)
 {
-    gameMap.findObjects();
     gameMap.readTextures(textures);
+    gameMap.findObjects();
     floor.width = GetRenderWidth();
     floor.height = GetRenderHeight() / 2.0f;
     floor.x = 0;
@@ -240,10 +260,10 @@ void World::addPlayer(const Player& player)
     }
 }
 
+
 void World::removePlayer(int idPlayer)
 {
     int idx = std::find(vecId.begin(), vecId.end(), idPlayer) - vecId.begin();
-    //vecId.erase(vecId.begin() + idx);
     players.erase(idPlayer);
 
     if (players.empty()) curPlayer = -1;
@@ -267,7 +287,7 @@ TEST_F(WorldTest, worldInit)
 
 TEST_F(WorldTest, addPlayer)
 {
-  Player p = Player({5, 4}, {3, 7}, 0, softRed, "../../Rendering Raylib/resources/player_1.png");
+  Player p = Player({5, 4}, 40, softRed, "../../Rendering Raylib/resources/player_1.png", "Ivan");
   std::vector<Player> players;
   wt->addPlayer(p);
   players.push_back(p);
@@ -276,7 +296,7 @@ TEST_F(WorldTest, addPlayer)
 
 TEST_F(WorldTest, removePlayer)
 {
-  Player p = Player({5, 4}, {3, 7}, 0, softRed, "../../Rendering Raylib/resources/player_1.png");
+  Player p = Player({5, 4}, 40, softRed, "../../Rendering Raylib/resources/player_1.png", "Ivan");
   std::vector<Player> players;
   p.setId(5);
   wt->addPlayer(p);
@@ -310,7 +330,8 @@ Color changeLightness(const Color& color, const int delta)
     return {r, g, b, 255};
 }
 
-float constrainAngle360(float angle) {
+double constrainAngle360(const double angle) 
+{
     return std::fmod(std::fmod(angle, 360.0) + 360.0, 360.0);
 }
 
@@ -343,26 +364,11 @@ TEST(ToolsTest, RadToDeg)
 
 TEST(ToolsTest, constrainAngle360)
 {
-    EXPECT_FLOAT_EQ(constrainAngle360(40), 40);
+    const double angle = 40;
+    EXPECT_DOUBLE_EQ(constrainAngle360(angle), 40);
 }
 
 // WEAPON FUNCTIONS
-Weapon::Weapon(const std::string& gun, int cartridges, int oneClip, int maxCartridges, int damage) :
-    actions(), cartridges(cartridges), oneClip(oneClip), maxCartridges(maxCartridges),
-    curCartridge(oneClip), damage(damage)
-{
-    // //cartridgesTexture = LoadTexture("../../Rendering Raylib/resources/cartridges.png");
-    // //redScope = LoadTexture("../../Rendering Raylib/resources/scope.png");
-    // //font = LoadFontEx("../../Rendering Raylib/resources/Calibri.ttf", 30, nullptr, 0);
-    // bgCarts = {CARTRIDGES_X, CARTRIDGES_Y, (float)cartridgesTexture.width + 2 * THICKNESS_FRAME, 
-    //             (float)cartridgesTexture.height + 2 * THICKNESS_FRAME};
-    // //soundShoot = LoadSound("../../Rendering Raylib/resources/shoot.mp3");
-    // //soundReload = LoadSound("../../Rendering Raylib/resources/reload.mp3");
-    // //soundEmpty = LoadSound("../../Rendering Raylib/resources/empty.mp3");
-
-    // std::vector<std::string> files = {"/shootRight.png", "/shootLeft.png", "/reloadLeft.png", "/reloadRight.png"};
-    // for (size_t i = 0; i < files.size(); ++i) {
-    //     actions.push_back(LoadTexture((gun + files[i]).c_str()));
-    //     animFrames.push_back({actions.back().width / WIDTH, actions.back().height / HEIGHT});
-    // }
-}
+Weapon::Weapon(const std::string& gun, int cartridges, int oneClip, int damage) :
+    actions(), cartridges(cartridges), oneClip(oneClip), curCartridge(oneClip), damage(damage)
+{}

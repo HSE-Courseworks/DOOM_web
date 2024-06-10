@@ -3,7 +3,7 @@
 #include <fstream>
 
 Map::Map(const std::string& filename) : 
-    scheme(), objects(), textures(), colors()
+    scheme(), objects(), pickUps(COUNT_PICKUP_ALL), textures(), colors()
 {
     wholeGameMap = LoadTexture("resources/gameMap.png");
     shade = LoadTexture("resources/shade.png");
@@ -25,13 +25,24 @@ Map::Map(const std::string& filename) :
 
 void Map::findObjects()
 {
-    Rectangle wall = {0, 0, wallSize.x, wallSize.y};    
+    Rectangle wall = {0, 0, wallSize.x, wallSize.y};
     int N = scheme.size(), M = scheme.front().size();
+    const float radius = 2.0f;
+
+    int posH = 0, posC = COUNT_PICKUP_CATEG, posA = COUNT_PICKUP_CATEG * 2;
     for (int i = 0; i < N; ++i)
     {
         for (int j = 0; j < M; ++j)
         {
-            if (scheme[i][j] != '.')
+            if (scheme[i][j] == 'H' || scheme[i][j] == 'C' || scheme[i][j] == 'A') {
+                float posX = frame.x + j * wallSize.x + WALL_SIZE / 2;
+                float posY = frame.y + i * wallSize.y + WALL_SIZE / 2;
+                PickUp pickup(scheme[i][j], radius, {posX, posY}, &textures[scheme[i][j]]);
+                if (scheme[i][j] == 'H') pickUps[posH++] = pickup;
+                else if (scheme[i][j] == 'C') pickUps[posC++] = pickup;
+                else pickUps[posA++] = pickup;
+            }
+            else if (scheme[i][j] != '.')
             {
                 wall.x = frame.x + j * wallSize.x;
                 wall.y = frame.y + i * wallSize.y;
@@ -98,6 +109,10 @@ const Rectangle& Map::getFrame() const
 const Texture2D* Map::getTexture(char type) const
 {
     return &textures.at(type);
+}
+
+const Texture2D* Map::getMapImage() const {
+    return &wholeGameMap;
 }
 
 //#include <stack>
