@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10...3.27) # FetchContent is available in 3.11+
+cmake_minimum_required(VERSION 3.10...3.27) 
 project(DOOM_web)
 
 # Generate compile_commands.json

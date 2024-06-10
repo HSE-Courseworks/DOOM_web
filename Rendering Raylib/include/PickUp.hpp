@@ -17,7 +17,7 @@ public:
     void setSymbol(const char newSymbol);
     void setPosition(const Vector2 &newPosition);
     void setFlagActive(bool flag);
-    void setTimeGet(int time);
+    void setTimeGet(const int time);
 
     char getSymbol() const;
     const Vector2 &getPosition() const;

@@ -22,7 +22,7 @@ void PickUp::setPosition(const Vector2 &newPosition) { position = newPosition; }
 
 void PickUp::setFlagActive(bool flag) { isActive = flag; };
 
-void PickUp::setTimeGet(int time) { timeGet = time; }
+void PickUp::setTimeGet(const int time) { timeGet = time; }
 
 char PickUp::getSymbol() const { return symbol; }
 
