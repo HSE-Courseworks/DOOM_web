@@ -154,7 +154,10 @@ TEST_F(MapTest, readTextures)
 Player::Player(const Vector2& pos, const float angle, const Color& color, const std::string& texture, const std::string& nickName) : 
     nickName(nickName), color(color), sightDist(SIZE_PIXEL_MAP * 3), rotationAngle(angle),
     FOV(VIEW_ANGLE), circlePoints(COUNT_POINTS), segment(COUNT_POINTS), drawInfo()
-{}
+{
+    cameraPos.x = pos.x;
+    cameraPos.y = pos.y; 
+}
 
 float Player::getRotation() const
 {
@@ -196,7 +199,7 @@ struct PlayerTest : public testing::Test {
   Player *pt;
   Map *mt;
   void SetUp() { mt = new Map("../../Rendering Raylib/resources/maze.txt"); 
-                pt = new Player({mt->getWallSize().x / 4, mt->getWallSize().x / 4}, 40, softRed, "../../Rendering Raylib/resources/player_1.png", "Ivan"); }
+                pt = new Player({5, 5}, 40, softRed, "../../Rendering Raylib/resources/player_1.png", "Ivan"); }
   void TearDown() { delete mt; delete pt; }
 };
 
@@ -207,8 +210,8 @@ TEST_F(PlayerTest, getRotation)
 
 TEST_F(PlayerTest, getPosition)
 {
-  EXPECT_FLOAT_EQ(pt->getPosition().x, 0);
-  EXPECT_FLOAT_EQ(pt->getPosition().y, 0);
+  EXPECT_FLOAT_EQ(pt->getPosition().x, 5);
+  EXPECT_FLOAT_EQ(pt->getPosition().y, 5);
 }
 
 TEST_F(PlayerTest, getSize)
