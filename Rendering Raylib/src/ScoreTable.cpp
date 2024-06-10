@@ -1,40 +1,40 @@
 #include "ScoreTable.hpp"
 
-ScoreTable::ScoreTable() : gameInfo() {
+ScoreTable::ScoreTable() : gameInfoPlayers() {
     inscriptions = {"Player", "K", "S", "D", "DMG", "KD"};
     frame = {SCORE_X, SCORE_Y, TABLE_SIZE_X, TABLE_SIZE_Y};
     font = LoadFontEx("resources/Calibri.ttf", 30, nullptr, 0);
 }
 
 void ScoreTable::addPlayer(const int id, const std::string& nickName, const Color& color) {
-    gameInfo[id] = std::make_pair(std::make_tuple(nickName, 0, 0, 0, 0, 0), color);
+    gameInfoPlayers[id] = std::make_pair(std::make_tuple(nickName, 0, 0, 0, 0, 0), color);
 }
 
 void ScoreTable::deletePlayer(const int id) {
-    gameInfo.erase(id);
+    gameInfoPlayers.erase(id);
 }
 
 void ScoreTable::updateKill(const int id) {
-    std::get<GAME_INFO::KILL>(gameInfo[id].first)++;
+    std::get<GAME_INFO::KILL>(gameInfoPlayers[id].first)++;
 
-    int kills = std::get<GAME_INFO::KILL>(gameInfo[id].first);
-    int deaths = std::get<GAME_INFO::DEATH>(gameInfo[id].first);
-    std::get<GAME_INFO::KD>(gameInfo[id].first) = (!deaths) ? kills : (float)kills / deaths;
+    int kills = std::get<GAME_INFO::KILL>(gameInfoPlayers[id].first);
+    int deaths = std::get<GAME_INFO::DEATH>(gameInfoPlayers[id].first);
+    std::get<GAME_INFO::KD>(gameInfoPlayers[id].first) = (!deaths) ? kills : (float)kills / deaths;
 }
 
 void ScoreTable::updateSupport(const int id) {
-    std::get<GAME_INFO::SUPPORT>(gameInfo[id].first)++;
+    std::get<GAME_INFO::SUPPORT>(gameInfoPlayers[id].first)++;
 }
 
 void ScoreTable::updateDeath(const int id) {
-    std::get<GAME_INFO::DEATH>(gameInfo[id].first)++;
-    int kills = std::get<GAME_INFO::KILL>(gameInfo[id].first);
-    int deaths = std::get<GAME_INFO::DEATH>(gameInfo[id].first);
-    std::get<GAME_INFO::KD>(gameInfo[id].first) = (float)kills / deaths;
+    std::get<GAME_INFO::DEATH>(gameInfoPlayers[id].first)++;
+    int kills = std::get<GAME_INFO::KILL>(gameInfoPlayers[id].first);
+    int deaths = std::get<GAME_INFO::DEATH>(gameInfoPlayers[id].first);
+    std::get<GAME_INFO::KD>(gameInfoPlayers[id].first) = (float)kills / deaths;
 }
 
 void ScoreTable::updateDamage(const int id, const int damage) {
-    std::get<GAME_INFO::DAMAGE>(gameInfo[id].first) += damage;
+    std::get<GAME_INFO::DAMAGE>(gameInfoPlayers[id].first) += damage;
 }
 
 void ScoreTable::show() const {
@@ -50,12 +50,12 @@ void ScoreTable::show() const {
 
     std::vector<float> parts = {160, 40, 40, 40, 80, 60};
     std::vector <std::pair<float, int>> order;
-    for (auto& [id, info] : gameInfo) order.push_back({std::get<GAME_INFO::KD>(info.first), id});
+    for (auto& [id, info] : gameInfoPlayers) order.push_back({std::get<GAME_INFO::KD>(info.first), id});
     std::sort(order.begin(), order.end(), [](const auto& p1, const auto& p2){return p1.first > p2.first;});
 
     for (size_t i = 0; i < order.size(); ++i)
     {
-        auto [curGameInfo, color] = gameInfo.at(order[i].second);
+        auto [curGameInfo, color] = gameInfoPlayers.at(order[i].second);
         float shiftX = SCORE_X + MARGIN, shiftY = SCORE_Y + MARGIN + i * (MARGIN + backGroundPlayer.height);
         float height = backGroundPlayer.height / 2.0f;
         for (size_t feature = 0; feature < parts.size(); ++feature) {

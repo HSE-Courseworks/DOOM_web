@@ -33,7 +33,7 @@ public:
     void deletePlayer(const int id);
 
 private:
-    std::unordered_map<int, std::pair<gameInfo, Color>> gameInfo;
+    std::unordered_map<int, std::pair<gameInfo, Color>> gameInfoPlayers;
     std::vector<std::string> inscriptions;
     Font font;
     Rectangle frame;
