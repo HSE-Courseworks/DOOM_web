@@ -1,22 +1,31 @@
 #include "Timer.hpp" 
 
-Timer::Timer(const int time) : time(time) {
+Timer::Timer(const int duration) : duration(duration), leftTime(duration) {
     font = LoadFontEx("resources/Calibri.ttf", 40, nullptr, 0);
     backGround = {TIMER_X, TIMER_Y, TIMER_SIZE_X, TIMER_SIZE_Y};
-    prevTime = GetTime();
+    prevTime = 0;
     clockTexture = LoadTexture("resources/watch.png");
 }
 
+void Timer::start() {
+    if (!isStart) {
+        prevTime = GetTime();
+        isStart = true;
+    }
+}
+
+void Timer::stop() {
+    isStart = false;
+}
+
 void Timer::update() {
-    double curTime = GetTime();
-    if (curTime - prevTime >= 1.0) {
-        time--;
-        prevTime = curTime;
+    if (isStart) {
+        leftTime = static_cast<int>(duration - (GetTime() - prevTime));
     }
 }
 
 void Timer::show() const {
-    const char *textInfo = TextFormat("%02i:%02i", time / 60, time % 60);
+    const char *textInfo = TextFormat("%02i:%02i", leftTime / 60, leftTime % 60);
     Vector2 bounds = MeasureTextEx(font, textInfo, 40, 0);
     DrawRectangleRec(backGround, GRAY);
     DrawRectangleLinesEx(backGround, THICKNESS, BLACK);
@@ -27,5 +36,9 @@ void Timer::show() const {
 }
 
 int Timer::getLeftSeconds() const {
-    return time;
+    return leftTime;
+}
+
+void Timer::reboot() {
+    leftTime = duration;
 }

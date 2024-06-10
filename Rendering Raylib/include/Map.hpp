@@ -1,12 +1,12 @@
 #ifndef MAP_HPP
 #define MAP_HPP
 
-#include <vector>
-#include <unordered_map>
-#include <string>
 #include "raylib.h"
 #include "Tools.hpp"
 #include "PickUp.hpp"
+#include <vector>
+#include <unordered_map>
+#include <string>
 
 #define SIZE_PIXEL_MAP (240)
 #define WALL_SIZE (16)
@@ -16,8 +16,7 @@
 
 using tableChar = std::vector<std::string>;
 
-class Map
-{
+class Map {
 public:
     tableChar scheme;
     std::vector<std::pair<Rectangle, char>> objects;
@@ -36,7 +35,7 @@ public:
     const Texture2D* getMapImage() const;
 
 private:
-    Vector2 mazeSize; Vector2 wallSize;
+    Vector2 mazeSize, wallSize;
     Rectangle frame;
     Texture2D wholeGameMap, shade;
     std::unordered_map<char, Texture2D> textures;

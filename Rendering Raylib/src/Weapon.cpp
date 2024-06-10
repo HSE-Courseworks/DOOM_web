@@ -70,6 +70,12 @@ void Weapon::showAmmunition() const
     DrawTextEx(font, textInfo, {INFO_CART_X + 1.5 * THICKNESS_FRAME, INFO_CART_Y + 2 * THICKNESS_FRAME}, 30, 0, BLACK);
 }
 
+void Weapon::setAmmunition(const int countCartridges, const int oneClipCount) {
+    cartridges = countCartridges;
+    oneClip = oneClipCount;
+    curCartridge = oneClipCount;
+}
+
 void Weapon::updateAmmunition(int cntCartridges) {
     cartridges = std::min(cartridges + cntCartridges, MAX_CARTRIDGES);
     SetSoundVolume(soundGet, VOLUME * 2);

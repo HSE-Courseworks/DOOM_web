@@ -33,6 +33,7 @@ public:
     void setFlagLeftHand(bool flag);
     bool getFlagLeftHand() const;
     void showAmmunition() const;
+    void setAmmunition(const int countCartridges, const int oneClipCount);
     void updateAmmunition(int cntCartridges);
     int shoot(std::pair<float, int> infoShoot);
     void reload();

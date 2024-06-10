@@ -11,13 +11,17 @@
 
 class Timer {
 public:
-    Timer(const int time);
+    Timer(const int duration);
+    void start();
+    void stop();
     void update();
-    int getLeftSeconds() const;
     void show() const;
+    void reboot();
+    int getLeftSeconds() const;
 
 private:
-    int time;
+    int duration, leftTime;
+    bool isStart = false;
     double prevTime;
     Rectangle backGround;
     Texture2D clockTexture;

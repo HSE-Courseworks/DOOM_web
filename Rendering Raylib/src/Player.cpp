@@ -1,10 +1,10 @@
 #include "Player.hpp"
 
-Player::Player(const Vector2& pos, const float angle, const Color& color, const std::string& texture, const std::string& nickName) : 
+Player::Player(const Vector2& pos, const float angle, const Color& color, const std::string& nickName) : 
     nickName(nickName), gun("resources/guns/glock", 100, 20, 10), color(color), sightDist(SIZE_PIXEL_MAP * 3), rotationAngle(angle),
     FOV(VIEW_ANGLE), circlePoints(COUNT_POINTS), segment(COUNT_POINTS), drawInfo()
 {
-    texturePlayer = LoadTexture(texture.c_str());
+    texturePlayer = LoadTexture("resources/player.png");
 
     healthTexture = LoadTexture("resources/health.png");
     armorTexture = LoadTexture("resources/armor.png");
@@ -40,7 +40,7 @@ void Player::show(const Vector2& shift) const
 
 void Player::detectCollision(const std::vector<Rectangle>& objects, Vector2& delta)
 {
-    Rectangle copy(cameraPos.x - RADIUS, cameraPos.y - RADIUS, 2 * RADIUS, 2 * RADIUS); 
+    Rectangle copy = {cameraPos.x - RADIUS, cameraPos.y - RADIUS, 2 * RADIUS, 2 * RADIUS}; 
     copy.x += delta.x; copy.y += delta.y;
 
     std::vector<int> indexCollisions;
@@ -82,7 +82,7 @@ void Player::detectCollision(const std::vector<Rectangle>& objects, Vector2& del
     mapShiftY += delta.y;
 }
 
-void Player::updatePosition(const Map& gameMap, const std::unordered_map<int, Player>& players, const float delta)
+void Player::updatePosition(const Map& gameMap, const std::vector<Player*>& players, const float delta)
 {
     float rotAngle = DegToRad(rotationAngle), speed = delta * KOEF_SPEED;
     std::vector<std::pair<bool, Vector2>> dir;
@@ -115,9 +115,8 @@ void Player::updatePosition(const Map& gameMap, const std::unordered_map<int, Pl
     for (size_t i = 0; i < gameMap.objects.size(); ++i) {
         objects.push_back(gameMap.objects[i].first);
     }
-    for (auto& [id, player] : players) {
-        if (player.id == this->id) continue;
-        objects.push_back({player.getPosition().x - RADIUS, player.getPosition().y - RADIUS, 2 * RADIUS, 2 * RADIUS});
+    for (auto& player : players) {
+        objects.push_back({player->getPosition().x - RADIUS, player->getPosition().y - RADIUS, 2 * RADIUS, 2 * RADIUS});
     }
     detectCollision(objects, deltaPos);
 }
@@ -202,6 +201,18 @@ int Player::getId() const
     return id;
 }
 
+int Player::getHealth() const {
+    return hp;
+}
+
+void Player::setHealth(const int newHp) {
+    hp = newHp;
+}
+
+void Player::setArmor(const int newArmor) {
+    armor = newArmor;
+}
+
 float Player::getMapShiftX() const 
 {
     return mapShiftX;
@@ -212,12 +223,16 @@ float Player::getMapShiftY() const
     return mapShiftY;
 }
 
-std::string Player::getNickName() const {
-    return nickName;
+double Player::getTimeDied() const {
+    return whenDied;
 }
 
-void Player::setNickName(const std::string& newNickName) {
-    nickName = newNickName;
+void Player::setTimeDied(const double time) {
+    whenDied = time;
+}
+
+std::string Player::getNickName() const {
+    return nickName;
 }
 
 void Player::showNickName() const {
@@ -230,6 +245,17 @@ void Player::showNickName() const {
 
 Color Player::getColor() const {
     return color;
+}
+
+void Player::setRotation(float angle) {
+    rotationAngle = angle;
+}
+
+void Player::setPosition(Vector2& position) {
+    cameraPos.x = position.x;
+    cameraPos.y = position.y; 
+    mapShiftX = position.x - THICKNESS_MAP * 2;
+    mapShiftY = position.y - THICKNESS_MAP * 2;
 }
 
 const Weapon& Player::getGun() const {
@@ -269,8 +295,6 @@ void Player::takeDamage(int damage, int idOpp, ScoreTable& table)
             table.updateSupport(idPlayer);
         }
         whoDmg.clear(); 
-
-        // Дописать смерть игрока
     }
 }
 
@@ -665,7 +689,7 @@ void Player::calcRayDistEnv(const Map& gameMap)
         cur.first *= cos(DegToRad(deltaAngle * i - FOV / 2));
 
         char type = gameMap.scheme[cur.second.x][cur.second.y];
-        drawInfo.push_back(std::make_tuple(cur.first, -1, Vector2(0, 0), shiftX / sizeWall, i, gameMap.getTexture(type), 0, 0));
+        drawInfo.push_back(std::make_tuple(cur.first, -1, Vector2{0, 0}, shiftX / sizeWall, i, gameMap.getTexture(type), 0, 0));
         curAngle += deltaAngle;
     }
 }
@@ -697,7 +721,7 @@ void Player::calcRayDistPickUps(const std::vector<PickUp>& pickups) {
 
         if (std::fabs(sightDist - curDist) > 1e-9) {
             curDist *= cos(DegToRad(deltaAngle * i - FOV / 2));
-            drawInfo.push_back(std::make_tuple(curDist, -1, Vector2(0, 0), curShiftX / curAngleViewPickUp,
+            drawInfo.push_back(std::make_tuple(curDist, -1, Vector2{0, 0}, curShiftX / curAngleViewPickUp,
                                                i, pickups[chosen].getTexture(), chosen - COUNT_PICKUP_ALL, 0));
         }
         curAngle += deltaAngle;

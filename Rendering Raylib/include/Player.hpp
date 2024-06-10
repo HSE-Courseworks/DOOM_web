@@ -76,14 +76,15 @@ class Player
 {
 public:
     Player() = default;
-    Player(const Vector2& pos, const float angle, const Color& color, const std::string& texture, const std::string& nickName);
+    Player(const Vector2& pos, const float angle, const Color& color, const std::string& nickName);
     void show(const Vector2& shift) const;
-    void updatePosition(const Map& gameMap, const std::unordered_map<int, Player>& players, const float delta);
+    void updatePosition(const Map& gameMap, const std::vector<Player*>& players, const float delta);
     void rotate(const float speed);
     float getRotation() const;
     const Vector2 getPosition() const;
+    void setRotation(float angle);
+    void setPosition(Vector2& position);
     const Vector2 getSize() const;
-
 
     void showScope() const;
 	void show3DViewInWindow() const; 
@@ -104,7 +105,6 @@ public:
     void updateHP(int cntHp);
     void updateArmor(int cntArmor);
     std::string getNickName() const;
-    void setNickName(const std::string& newNickName);
     void showNickName() const;
     Color getColor() const;
     std::pair<float, int> getInfoCenterObject() const;
@@ -115,6 +115,11 @@ public:
     void showArmor() const;
     void setId(int id);
     int getId() const;
+    int getHealth() const;
+    void setHealth(const int newHp);
+    void setArmor(const int newArmor);
+    void setTimeDied(const double time);
+    double getTimeDied() const;
     const std::unordered_set<int>& getDetectedEnemy() const;
 
 private:
@@ -139,6 +144,7 @@ private:
     Rectangle backGroundH, backGroundA;
     Sound soundInjury, soundGetHp, soundGetArmor, soundHit;
     std::unordered_set<int> whoDmg;
+    double whenDied = 0;
 
     void detectCollision(const std::vector<Rectangle>& objects, Vector2& delta);
     Vector2 getCrossPoint(const std::vector<Vector2>& points) const;

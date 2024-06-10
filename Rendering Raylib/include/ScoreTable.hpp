@@ -8,7 +8,7 @@
 #include <string>
 #include <algorithm>
 
-#define MAX_PLAYERS (5)
+#define MAX_PLAYERS (4)
 #define SCORE_X (1450)
 #define SCORE_Y (550)
 #define MARGIN (20)
@@ -24,19 +24,23 @@ using gameInfo = std::tuple<std::string, int, int, int, int, float>;
 class ScoreTable {
 public:
     ScoreTable();
-    void show() const;
+    ScoreTable(const ScoreTable& other);
+    ScoreTable& operator=(const ScoreTable& rht);
+    void show(const Vector2& position) const;
     void updateKill(const int id);
     void updateSupport(const int id);
     void updateDeath(const int id);
     void updateDamage(const int id, const int damage);
     void addPlayer(const int id, const std::string& nickName, const Color& color);
     void deletePlayer(const int id);
+    std::string getTopPlayer() const;
+    void reboot();
+    std::vector<int> getOrderPlayers() const;
 
 private:
-    std::unordered_map<int, std::pair<gameInfo, Color>> gameInfoPlayers;
+    std::unordered_map<int, std::pair<gameInfo, Color>> gameInfo;
     std::vector<std::string> inscriptions;
     Font font;
-    Rectangle frame;
 };
 
 #endif
