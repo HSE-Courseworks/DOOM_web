@@ -4,30 +4,16 @@ User::User(const int id, const std::string& nickName) : id(id), nickName(nickNam
 
 User::User(const User &other) : id(other.id), nickName(other.nickName) {}
 
-int User::getId() const {
-    return id;
-}
+void User::setNickName(const std::string& newNickName) { nickName = newNickName; }
 
-std::string User::getNickName() const {
-    return nickName;
-}
+void User::setFlagActive(bool flag) { active = flag; }
 
-void User::setNickName(const std::string& newNickName) {
-    nickName = newNickName;
-}
+void User::setFlagInGame(bool flag) { inGame = flag; }
 
-bool User::getFlagActive() const {
-    return active;
-}
+int User::getId() const { return id; }
 
-void User::setFlagActive(bool flag) {
-    active = flag;
-}
+std::string User::getNickName() const { return nickName; }
 
-bool User::getFlagInGame() const {
-    return inGame;
-}
+bool User::getFlagActive() const { return active; }
 
-void User::setFlagInGame(bool flag) {
-    inGame = flag;
-}
+bool User::getFlagInGame() const { return inGame; }

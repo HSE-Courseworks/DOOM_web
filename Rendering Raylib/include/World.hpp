@@ -10,24 +10,28 @@
 #include "Fps.hpp"
 #include "ScoreTable.hpp"
 
-#define MAX_DIST_TO_GET (60)
+#define MAX_DIST_TO_GET (40)
 
-class World {
+class World
+{
 public:
-    Map gameMap; Timer timer;
+    Map gameMap;
+    Timer timer;
     ScoreTable scoreTable;
     std::unordered_map<int, std::pair<bool, Player*>> players; // map: id -> player
 
-    World(const std::string& map, const std::string& textures);
-    void addPlayer(const int id, const std::string& nickName);
+    World(const std::string &map, const std::string &textures);
+    void addPlayer(const int id, const std::string &nickName);
     void removePlayer(const int id);
     void resurrectPlayer(const int id);
+
     Pages update(const int id, const float speed);
     void show(const int id) const;
-    int getPlayersNumber() const;
     void reboot();
-    double getTimeEnd() const;
+
     void setTimeEnd(const double time);
+    int getPlayersNumber() const;
+    double getTimeEnd() const;
 
 private:
     Fps fps;
@@ -35,8 +39,8 @@ private:
     std::vector<std::pair<std::tuple<Vector2, float, Color>, int>> slots;
     double timeEnd;
 
-    void showMiniMap(int id) const;
-    void showMap(int id) const;
+    void showMiniMap(const int id) const;
+    void showMap(const int id) const;
 };
 
-#endif 
+#endif

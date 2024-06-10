@@ -6,7 +6,8 @@
 #define BUTTON_WIDTH_MENU (800)
 #define BUTTON_HEIGHT_MENU (120)
 
-class Menu : Page {
+class Menu : Page
+{
 public:
     Menu();
     Pages update() override;

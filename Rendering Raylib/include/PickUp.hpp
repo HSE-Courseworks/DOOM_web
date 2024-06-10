@@ -4,31 +4,33 @@
 #include "raylib.h"
 
 #define TIME_REBIRTH (10)
+#define SIZE_PICKUP (2.0f)
 
-class PickUp {
+class PickUp
+{
 public:
     PickUp() = default;
-    PickUp(char symbol, const float radius, const Vector2& pos, Texture* texture);
-    PickUp(const PickUp& other);
-    void show(Vector2 shift) const;
+    PickUp(const char symbol, const Vector2 &pos, Texture *texture);
+    PickUp(const PickUp &other);
+    void show(const Vector2 &shift) const;
+
+    void setSymbol(const char newSymbol);
+    void setPosition(const Vector2 &newPosition);
+    void setFlagActive(bool flag);
+    void setTimeGet(int time);
 
     char getSymbol() const;
-    float getRadius() const;
-    const Vector2& getPosition() const;
-    void setFlagActive(bool flag);
+    const Vector2 &getPosition() const;
     bool getFlagActive() const;
-    void setTimeGet(int time);
     int getTimeGet() const;
     int getHowMuchAdd() const;
     const Texture2D *getTexture() const;
 
 private:
     char symbol;
-    float radius;
     bool isActive;
-    int timeGet;
-    int howMuchAdd = 20;
-    Texture2D* texture;
+    int timeGet, howMuchAdd = 20;
+    Texture2D *texture;
     Vector2 position;
 };
 

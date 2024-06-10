@@ -1,19 +1,17 @@
 #include "World.hpp"
 
-World::World(const std::string& map, const std::string& textures) : 
-    gameMap(map), timer(120), scoreTable(), players(), fps()
+World::World(const std::string &map, const std::string &textures) : 
+    gameMap(map), timer(300), scoreTable(), players(), fps()
 {
     gameMap.readTextures(textures);
     gameMap.findObjects();
-    floor.width = GetRenderWidth();
-    floor.height = GetRenderHeight() / 2.0f;
-    floor.x = 0;
-    floor.y = GetRenderHeight() / 2.0f;
+    floor = {0, GetRenderHeight() / 2.0f,
+             static_cast<float>(GetRenderWidth()), GetRenderHeight() / 2.0f};
 
     Vector2 pos_1 = {gameMap.getFrame().x + WALL_SIZE * 3 / 2.0f, gameMap.getFrame().y + WALL_SIZE * 3 / 2.0f};
     slots.push_back(std::make_pair(std::make_tuple(pos_1, 0, softRed), -1));
 
-    Vector2 pos_2 = {gameMap.getFrame().x + WALL_SIZE * (gameMap.getMazeSize().x - 3 / 2.0f), 
+    Vector2 pos_2 = {gameMap.getFrame().x + WALL_SIZE * (gameMap.getMazeSize().x - 3 / 2.0f),
                      gameMap.getFrame().y + WALL_SIZE * (gameMap.getMazeSize().y - 3 / 2.0f)};
     slots.push_back(std::make_pair(std::make_tuple(pos_2, 180, softBlue), -1));
 
@@ -27,12 +25,11 @@ World::World(const std::string& map, const std::string& textures) :
     timeEnd = 0;
 }
 
-void World::addPlayer(const int id, const std::string& nickName)
+void World::addPlayer(const int id, const std::string &nickName)
 {
-    if (players.size() != MAX_PLAYERS && timer.getLeftSeconds() > 0)
-    {
+    if (players.size() != MAX_PLAYERS && timer.getLeftSeconds() > 0) {
         Vector2 pos; float angle = 0; Color color;
-        for (auto& [slot, idPlayer] : slots) {
+        for (auto &[slot, idPlayer] : slots) {
             if (idPlayer == -1) {
                 std::tie(pos, angle, color) = slot;
                 idPlayer = id;
@@ -47,27 +44,29 @@ void World::addPlayer(const int id, const std::string& nickName)
 
 void World::removePlayer(const int id)
 {
-    for (auto& [slot, idPlayer] : slots) {
+    for (auto &[slot, idPlayer] : slots) {
         if (idPlayer == id) {
             idPlayer = -1;
             break;
         }
     }
-    Player* playerForDelete = players[id].second;
+    Player *playerForDelete = players[id].second;
     players[id].second = nullptr;
     players.erase(id);
     if (!timeEnd) scoreTable.deletePlayer(id);
     delete playerForDelete;
 }
 
-void World::resurrectPlayer(const int id) {
+void World::resurrectPlayer(const int id)
+{
     players[id].first = true;
     players[id].second->setArmor(0);
     players[id].second->setHealth(100);
     players[id].second->getGun().setAmmunition(100, 20);
 
-    Vector2 startPos; float angle = 0;
-    for (auto& [slot, idPlayer] : slots) {
+    Vector2 startPos;
+    float angle = 0;
+    for (auto &[slot, idPlayer] : slots) {
         if (idPlayer == id) {
             std::tie(startPos, angle, std::ignore) = slot;
             break;
@@ -77,9 +76,9 @@ void World::resurrectPlayer(const int id) {
     players[id].second->setPosition(startPos);
 }
 
-Pages World::update(const int id, const float speed) 
+Pages World::update(const int id, const float speed)
 {
-    Player* curPlayerObj = players[id].second;
+    Player *curPlayerObj = players[id].second;
 
     if (timer.getLeftSeconds() > 0) timer.update();
     else { ShowCursor(); return Pages::SUMMARY; }
@@ -90,26 +89,33 @@ Pages World::update(const int id, const float speed)
     if (IsKeyReleased(KEY_ESCAPE)) { ShowCursor(); return Pages::PAUSE; }
 
     std::vector<Player*> opponents;
-    for (auto& [idPlayer, player] : players) {
+    for (auto &[idPlayer, player] : players) {
         if (id == idPlayer || !player.first) continue;
         opponents.push_back(player.second);
-    }   
+    }
 
     curPlayerObj->calculateRayDistances(gameMap, opponents);
     curPlayerObj->updateSegment();
-    curPlayerObj->updatePosition(gameMap, opponents, speed); 
+    curPlayerObj->updatePosition(gameMap, opponents, speed);
     curPlayerObj->rotate(speed);
 
-    if (IsKeyReleased(KEY_L)) curPlayerObj->setFlagShowLog(!curPlayerObj->getFlagShowLog());
+    if (IsKeyReleased(KEY_L))
+        curPlayerObj->setFlagShowLog(!curPlayerObj->getFlagShowLog());
 
-    if ((!curPlayerObj->getFlagScoreTable() && IsKeyDown(KEY_M)) || IsKeyDown(KEY_Q)) curPlayerObj->setFlagMap(true);
-    else curPlayerObj->setFlagMap(false);
+    if ((!curPlayerObj->getFlagScoreTable() && IsKeyDown(KEY_M)) || IsKeyDown(KEY_Q))
+        curPlayerObj->setFlagMap(true);
+    else
+        curPlayerObj->setFlagMap(false);
 
-    if ((!curPlayerObj->getFlagMap() && IsKeyDown(KEY_TAB)) || IsKeyDown(KEY_Q)) curPlayerObj->setFlagScoreTable(true);
-    else curPlayerObj->setFlagScoreTable(false);
+    if ((!curPlayerObj->getFlagMap() && IsKeyDown(KEY_TAB)) || IsKeyDown(KEY_Q))
+        curPlayerObj->setFlagScoreTable(true);
+    else
+        curPlayerObj->setFlagScoreTable(false);
 
-    if (curPlayerObj->getGun().checkShooting()) curPlayerObj->getGun().updateNextFrameShoot();
-    if (curPlayerObj->getGun().checkReloading()) curPlayerObj->getGun().updateNextFrameReload();
+    if (curPlayerObj->getGun().checkShooting())
+        curPlayerObj->getGun().updateNextFrameShoot();
+    if (curPlayerObj->getGun().checkReloading())
+        curPlayerObj->getGun().updateNextFrameReload();
 
     if (IsMouseButtonReleased(MOUSE_BUTTON_MIDDLE))
         curPlayerObj->getGun().setFlagLeftHand(!curPlayerObj->getGun().getFlagLeftHand());
@@ -126,101 +132,105 @@ Pages World::update(const int id, const float speed)
             }
         }
     }
-    
+
     if (IsKeyReleased(KEY_R)) curPlayerObj->getGun().reload();
 
     if (IsKeyReleased(KEY_E)) {
-            auto [dist, idObj] = curPlayerObj->getInfoCenterObject();
-            if (idObj < 0 && dist < MAX_DIST_TO_GET) {
-
-            if (idObj >= -COUNT_PICKUP_CATEG) 
+        auto [dist, idObj] = curPlayerObj->getInfoCenterObject();
+        if (idObj < 0 && dist < MAX_DIST_TO_GET) {
+            if (idObj >= -COUNT_PICKUP_CATEG)
                 curPlayerObj->updateArmor(gameMap.pickUps[idObj + COUNT_PICKUP_ALL].getHowMuchAdd());
             else if (idObj >= -COUNT_PICKUP_CATEG * 2)
                 curPlayerObj->getGun().updateAmmunition(gameMap.pickUps[idObj + COUNT_PICKUP_ALL].getHowMuchAdd());
             else
-                curPlayerObj->updateHP(gameMap.pickUps[idObj + COUNT_PICKUP_ALL].getHowMuchAdd());    
+                curPlayerObj->updateHP(gameMap.pickUps[idObj + COUNT_PICKUP_ALL].getHowMuchAdd());
 
             gameMap.pickUps[idObj + COUNT_PICKUP_ALL].setFlagActive(false);
             gameMap.pickUps[idObj + COUNT_PICKUP_ALL].setTimeGet(timer.getLeftSeconds());
         }
     }
 
-    for (auto& pickup : gameMap.pickUps) {
+    for (auto &pickup : gameMap.pickUps) {
         if (!pickup.getFlagActive() && pickup.getTimeGet() - timer.getLeftSeconds() == TIME_REBIRTH)
             pickup.setFlagActive(true);
     }
-    
+
     return Pages::GAME;
 }
 
-void World::showMiniMap(const int id) const {
+void World::showMiniMap(const int id) const
+{
     if (!players.at(id).first) return;
 
-    Vector2 mapPos = {THICKNESS_MAP * 2 + SIZE_PIXEL_MAP / 2.0f, THICKNESS_MAP * 2 + SIZE_PIXEL_MAP / 2.0f};
+    Vector2 mapPos = {THICKNESS_MAP * 2 + SIZE_PIXEL_MAP / 2.0f, 
+                        THICKNESS_MAP * 2 + SIZE_PIXEL_MAP / 2.0f};
     Vector2 curPlayerPos = players.at(id).second->getPosition();
     mapPos.x -= curPlayerPos.x;
     mapPos.y -= curPlayerPos.y;
     gameMap.showFrame();
-    gameMap.showObjectsInWindow(players.at(id).second->getMapShiftX(), players.at(id).second->getMapShiftY());
+    gameMap.showObjectsInWindow(players.at(id).second->getMapShiftX(), 
+                                players.at(id).second->getMapShiftY());
     players.at(id).second->show2DViewInWindow(mapPos);
-    for (const auto& [idPlayer, player] : players)
-    {
+    for (const auto &[idPlayer, player] : players) {
         if (!player.first) continue;
 
-        if (id == idPlayer) {
-            player.second->show(mapPos); continue;
-        }
+        if (id == idPlayer) { player.second->show(mapPos); continue; }
 
         Vector2 posOpp = player.second->getPosition();
-        if (std::pow(curPlayerPos.x - posOpp.x, 2) + std::pow(curPlayerPos.y - posOpp.y, 2)
-            <= std::pow(SIZE_PIXEL_MAP / 2, 2) && players.at(id).second->getDetectedEnemy().contains(idPlayer)) {
+        if (std::pow(curPlayerPos.x - posOpp.x, 2) + 
+            std::pow(curPlayerPos.y - posOpp.y, 2) <= std::pow(SIZE_PIXEL_MAP / 2, 2) && 
+            players.at(id).second->getDetectedEnemy().contains(idPlayer)) {
             player.second->show(mapPos);
         }
     }
 
-    for (auto& pickup : gameMap.pickUps) {
+    for (auto &pickup : gameMap.pickUps) {
         if (!pickup.getFlagActive()) continue;
 
         Vector2 posPick = pickup.getPosition();
-        if (std::pow(curPlayerPos.x - posPick.x, 2) + std::pow(curPlayerPos.y - posPick.y, 2)
-            <= std::pow(SIZE_PIXEL_MAP / 2, 2)) {
+        if (std::pow(curPlayerPos.x - posPick.x, 2) + 
+            std::pow(curPlayerPos.y - posPick.y, 2) <= std::pow(SIZE_PIXEL_MAP / 2, 2)) {
             pickup.show(mapPos);
         }
     }
 }
 
-void World::showMap(const int id) const {
+void World::showMap(const int id) const
+{
     if (!players.at(id).first) return;
 
     if (!players.at(id).second->getFlagScoreTable())
         DrawRectangle(0, 0, GetRenderWidth(), GetRenderHeight(), softGray);
     Texture2D wholeMap = *gameMap.getMapImage();
-    Vector2 posTexture = {(GetRenderWidth() - wholeMap.width) / 2.0f, (GetRenderHeight() - wholeMap.height) / 2.0f};
+    Vector2 posTexture = {(GetRenderWidth() - wholeMap.width) / 2.0f, 
+                            (GetRenderHeight() - wholeMap.height) / 2.0f};
     DrawTexture(wholeMap, posTexture.x, posTexture.y, WHITE);
-    DrawRectangleLinesEx({posTexture.x, posTexture.y, (float)wholeMap.width, (float)wholeMap.height}, THICKNESS_MAP, GRAY);
+    DrawRectangleLinesEx({posTexture.x, posTexture.y, static_cast<float>(wholeMap.width), 
+                        static_cast<float>(wholeMap.height)}, THICKNESS_MAP, GRAY);
 
     Vector2 shift = {posTexture.x + SIZE_PIXEL_MAP / 2.0f - 2 * THICKNESS_MAP,
                      posTexture.y + SIZE_PIXEL_MAP / 2.0f - 2 * THICKNESS_MAP};
     players.at(id).second->show2DViewInWindow(shift);
 
     Vector2 curPlayerPos = players.at(id).second->getPosition();
-    for (const auto& [idPlayer, player] : players)
-    {
+    for (const auto &[idPlayer, player] : players) {
         if (!player.first) continue;
 
         if (id == idPlayer) { player.second->show(shift); continue; }
 
         int time = player.second->getLastTimeShoot();
-        if (time && time - timer.getLeftSeconds() < TIME_SEEN) player.second->show(shift);
+        if (time && time - timer.getLeftSeconds() < TIME_SEEN)
+            player.second->show(shift);
 
         Vector2 posOpp = player.second->getPosition();
-        if (std::pow(curPlayerPos.x - posOpp.x, 2) + std::pow(curPlayerPos.y - posOpp.y, 2)
-            <= std::pow(SIZE_PIXEL_MAP / 2, 2) && players.at(id).second->getDetectedEnemy().contains(idPlayer)) {
+        if (std::pow(curPlayerPos.x - posOpp.x, 2) + 
+            std::pow(curPlayerPos.y - posOpp.y, 2) <= std::pow(SIZE_PIXEL_MAP / 2, 2) && 
+            players.at(id).second->getDetectedEnemy().contains(idPlayer)) {
             player.second->show(shift);
         }
     }
 
-    for (auto& pickup : gameMap.pickUps) {
+    for (auto &pickup : gameMap.pickUps) {
         if (!pickup.getFlagActive()) continue;
         pickup.show(shift);
     }
@@ -243,26 +253,23 @@ void World::show(const int id) const
     if (players.at(id).second->getFlagShowLog())
         players.at(id).second->showLog();
     timer.show();
-    if (players.at(id).second->getFlagScoreTable()) scoreTable.show({SCORE_X, SCORE_Y});
-    if (players.at(id).second->getFlagMap()) showMap(id);
+    if (players.at(id).second->getFlagScoreTable())
+        scoreTable.show({SCORE_X, SCORE_Y});
+    if (players.at(id).second->getFlagMap())
+        showMap(id);
 
     fps.show();
 }
 
-int World::getPlayersNumber() const {
-    return players.size();
-}
-
-void World::reboot() {
+void World::reboot()
+{
     timeEnd = 0;
     timer.reboot();
     scoreTable.reboot();
 }
 
-double World::getTimeEnd() const {
-    return timeEnd;
-}
+int World::getPlayersNumber() const { return players.size(); }
 
-void World::setTimeEnd(const double time) {
-    timeEnd = time;
-}
+double World::getTimeEnd() const { return timeEnd; }
+
+void World::setTimeEnd(const double time) { timeEnd = time; }

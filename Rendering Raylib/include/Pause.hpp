@@ -7,7 +7,8 @@
 #define BACK_WIDTH (620)
 #define BACK_HEIGHT (480)
 
-class Pause : Page {
+class Pause : Page
+{
 public:
     Pause();
     void show() const override;
@@ -15,10 +16,10 @@ public:
     void setPrevPage(Pages page);
 
 private:
-    Pages prevPage;
     Rectangle backGround, resumeButton, settingsButton, exitButton;
     Color colorResume, colorSettings, colorExit;
     Font font;
+    Pages prevPage;
 };
 
 #endif

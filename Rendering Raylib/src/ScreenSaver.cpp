@@ -1,6 +1,8 @@
 #include "ScreenSaver.hpp"
 
-ScreenSaver::ScreenSaver(const User& user) : user(user), menu(), settings(), world(nullptr) {
+ScreenSaver::ScreenSaver(const User &user) : 
+    user(user), menu(), settings(), world(nullptr), resurrection(), pause(), summary()
+{
     SetMousePosition(GetRenderWidth() / 2, GetRenderHeight() / 2);
     mainBackGround = LoadTexture("resources/backGround.png");
     music = LoadMusicStream("resources/backGroundMusic.mp3");
@@ -8,19 +10,19 @@ ScreenSaver::ScreenSaver(const User& user) : user(user), menu(), settings(), wor
     PlayMusicStream(music);
 }
 
-bool ScreenSaver::update() {
-    bool exit = false;
+bool ScreenSaver::update()
+{
+    UpdateMusicStream(music);
+    bool exit = false; prevPage = curPage;
 
-    UpdateMusicStream(music); 
-    prevPage = curPage;
     switch (curPage)
     {
     case MENU: curPage = menu.update(); break;
     case SETTINGS: curPage = settings.update(); break;
-    case RESURRECTION: curPage = resurrection.update(); break;    
+    case RESURRECTION: curPage = resurrection.update(); break;
     case PAUSE: curPage = pause.update(); break;
     case SUMMARY: curPage = summary.update(); break;
-    case GAME: if (world) { curPage = world->update(user.getId(), GetFrameTime()); } break;
+    case GAME: if (world) {curPage = world->update(user.getId(), GetFrameTime()); } break;
     case EXIT: exit = true; break;
     }
 
@@ -46,7 +48,8 @@ bool ScreenSaver::update() {
     return exit;
 }
 
-void ScreenSaver::show() const {
+void ScreenSaver::show() const
+{
     if (curPage == Pages::MENU || curPage == Pages::SETTINGS) {
         DrawTexture(mainBackGround, 0, 0, WHITE);
     }
@@ -55,7 +58,7 @@ void ScreenSaver::show() const {
     {
     case MENU: menu.show(); break;
     case SETTINGS: settings.show(); break;
-    case RESURRECTION: resurrection.show(); break;    
+    case RESURRECTION: resurrection.show(); break;
     case PAUSE: pause.show(); break;
     case SUMMARY: summary.show(); break;
     case GAME: if (world) { world->show(user.getId()); } break;
@@ -63,26 +66,14 @@ void ScreenSaver::show() const {
     }
 }
 
-Pages ScreenSaver::getPage() const {
-    return curPage;
-}
+void ScreenSaver::setPage(const Pages& page) { curPage = page; }
 
-void ScreenSaver::setPage(Pages page) {
-    curPage = page;
-}
+void ScreenSaver::setWorld(World *newWorld) { world = newWorld; }
 
-void ScreenSaver::setWorld(World* newWorld) {
-    world = newWorld;
-}
+Pages ScreenSaver::getPage() const { return curPage; }
 
-const User& ScreenSaver::getUser() const {
-    return user;
-}
+const User &ScreenSaver::getUser() const { return user; }
 
-User& ScreenSaver::getUser() {
-    return user;
-}
+User &ScreenSaver::getUser() { return user; }
 
-ScreenSaver::~ScreenSaver() {
-    UnloadMusicStream(music);
-}
+ScreenSaver::~ScreenSaver() { UnloadMusicStream(music); }

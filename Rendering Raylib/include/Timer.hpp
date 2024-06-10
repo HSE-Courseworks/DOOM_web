@@ -8,8 +8,10 @@
 #define TIMER_SIZE_X (200)
 #define TIMER_SIZE_Y (60)
 #define THICKNESS (10)
+#define FONT_SIZE_TIMER (40)
 
-class Timer {
+class Timer
+{
 public:
     Timer(const int duration);
     void start();
@@ -17,6 +19,7 @@ public:
     void update();
     void show() const;
     void reboot();
+
     int getLeftSeconds() const;
 
 private:

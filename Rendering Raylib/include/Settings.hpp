@@ -2,6 +2,7 @@
 #define SETTINGS_HPP
 
 #include "Page.hpp"
+
 #include <vector>
 #include <string>
 #include <algorithm>
@@ -12,26 +13,26 @@
 #define BACK_BUTTON_X (100)
 #define BACK_BUTTON_Y (130)
 #define BACK_BUTTON_RADIUS (50)
-
 #define FRAME_WIDTH (800)
 #define FRAME_HEIGTH (700)
 #define SHIFT_DESC (400)
 
-class Settings : Page {
+class Settings : Page
+{
 public:
     Settings();
     void show() const override;
     Pages update() override;
-    float getVolume();
+
     void setPrevPage(Pages page);
+    float getVolume();
 
 private:
+    float volume; Pages prevPage;
     Rectangle volumeSliderBar, volumeSlider, frame;
     Color colorBack;
     Texture2D back, title;
-    float volume;
     Font font;
-    Pages prevPage;
 };
 
 #endif
