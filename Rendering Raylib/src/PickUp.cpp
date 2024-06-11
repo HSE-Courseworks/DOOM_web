@@ -1,53 +1,37 @@
 #include "PickUp.hpp"
 
-PickUp::PickUp(char symbol, const float radius, const Vector2& pos, Texture* texture)
-    : symbol(symbol), radius(radius), isActive(true), timeGet(0), texture(texture), position(pos) {}
+PickUp::PickUp(const char symbol, const Vector2 &pos, Texture *texture)
+    : symbol(symbol), isActive(true), timeGet(0), texture(texture), position(pos) {}
 
-PickUp::PickUp(const PickUp& other) {
+PickUp::PickUp(const PickUp &other)
+{
     symbol = other.symbol;
-    radius = other.radius;
     position = other.position;
     isActive = other.isActive;
-    timeGet = other.timeGet;
     texture = other.texture;
 }
 
-void PickUp::show(Vector2 shift) const {
-    DrawCircle(position.x + shift.x, position.y + shift.y, radius, BLACK);
+void PickUp::show(const Vector2& shift) const
+{
+    DrawCircle(position.x + shift.x, position.y + shift.y, SIZE_PICKUP, BLACK);
 }
 
-char PickUp::getSymbol() const {
-    return symbol;
-}
+void PickUp::setSymbol(const char newSymbol) { symbol = newSymbol; }
 
-float PickUp::getRadius() const {
-    return radius;
-}
+void PickUp::setPosition(const Vector2 &newPosition) { position = newPosition; }
 
-const Vector2& PickUp::getPosition() const {
-    return position;
-}
+void PickUp::setFlagActive(bool flag) { isActive = flag; };
 
-void PickUp::setFlagActive(bool flag) {
-    isActive = flag;
-}
+void PickUp::setTimeGet(const int time) { timeGet = time; }
 
-bool PickUp::getFlagActive() const {
-    return isActive;
-}
+char PickUp::getSymbol() const { return symbol; }
 
-void PickUp::setTimeGet(int time) {
-    timeGet = time;
-}
+const Vector2 &PickUp::getPosition() const { return position;}
 
-int PickUp::getTimeGet() const {
-    return timeGet;
-}
+bool PickUp::getFlagActive() const { return isActive; }
 
-int PickUp::getHowMuchAdd() const {
-    return howMuchAdd;
-}
+int PickUp::getTimeGet() const { return timeGet; }
 
-const Texture2D* PickUp::getTexture() const {
-    return texture;
-}
+int PickUp::getHowMuchAdd() const { return howMuchAdd; }
+
+const Texture2D *PickUp::getTexture() const { return texture; }

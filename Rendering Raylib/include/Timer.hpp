@@ -8,16 +8,23 @@
 #define TIMER_SIZE_X (200)
 #define TIMER_SIZE_Y (60)
 #define THICKNESS (10)
+#define FONT_SIZE_TIMER (40)
 
-class Timer {
+class Timer
+{
 public:
-    Timer(const int time);
+    Timer(const int duration);
+    void start();
+    void stop();
     void update();
-    int getLeftSeconds() const;
     void show() const;
+    void reboot();
+
+    int getLeftSeconds() const;
 
 private:
-    int time;
+    int duration, leftTime;
+    bool isStart = false;
     double prevTime;
     Rectangle backGround;
     Texture2D clockTexture;
