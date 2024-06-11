@@ -7,5 +7,6 @@
 #include <SFML/Network.hpp>
 
 void ExchangeData(PlayerInfo *pl, Lobby *lobby);
+sf::Packet& operator<<(sf::Packet& pack, PlayerInfo& pl);
 
 #endif
