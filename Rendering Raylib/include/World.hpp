@@ -1,7 +1,7 @@
 #ifndef WORLD_HPP
 #define WORLD_HPP
 
-#define MAX_PLAYERS (5)
+//#define MAX_PLAYERS (5)
 
 #include "raylib.h"
 #include "Tools.hpp"
@@ -18,7 +18,7 @@ public:
     void removePlayer(const int idPlayer);
     void updateWorld(const float speed);
     void showWorld() const;
-
+    int GetCurPlayerID();
 private:
     std::unordered_map<int, Player> players; // map: id -> player
     std::vector<int> vecId;

@@ -1,4 +1,9 @@
 #include "World.hpp"
+#include "raylib.h"
+#include "Tools.hpp"
+#include "Map.hpp"
+#include "Player.hpp"
+#include "Client.hpp"
 
 World::World(const std::string& map, const std::string& textures) : 
     gameMap(map), players(), vecId(), curPlayer(-1), lastFreeId(1)
@@ -112,4 +117,8 @@ void World::showWorld() const
     }
     if (players.at(curIdPlayer).getFlagShowLog())
         players.at(curIdPlayer).showLog();
+}
+
+int World::GetCurPlayerID() {
+    return curPlayer;
 }
