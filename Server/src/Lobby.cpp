@@ -20,10 +20,12 @@ sf::Packet& operator<<(sf::Packet& pack, std::unordered_map<int, std::pair<std::
 
 Lobby::Lobby() : lId(lobbyCount), players(), lastPlayerID(0), vecID(), mtx() {
     ++lobbyCount;
+    std::cout << "New lobby has been created. Lobby: " << lId << std::endl;
 }
 
 Lobby::Lobby(Lobby&& l) : lId(l.lId), players(l.players), lastPlayerID(l.lastPlayerID), vecID(l.vecID), mtx() {
     ++lobbyCount;
+    std::cout << "New lobby has been created. Lobby: " << lId << std::endl;
 }
 
 Lobby::~Lobby() {
