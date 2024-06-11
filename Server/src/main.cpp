@@ -1,25 +1,21 @@
-#include "LobbyNode.hpp"
-#include "Server.h"
+#include "Lobby.hpp"
+#include "Server.hpp"
+#include <list>
+#include <SFML/Network.hpp>
+#include <thread>
+#include <iostream>
 
-using namespace Server;
 
-int main() {
-	LibStartUp();
-	//SOCKADDR_IN addr = CreateAddr();
+int main(int argc, char* argv[]) {
+    sf::TcpListener TCPListener;
+    TCPListener.listen(TCPPort, sf::IpAddress::getLocalAddress());
+    std::cout << sf::IpAddress::getLocalAddress();
 
-	SOCKET sockTCP, sockUDP;
-	CreateTCPSocket(sockTCP);
-	CreateUDPSocket(sockUDP);	
+    std::list<Lobby> lobbies;
+    std::list<std::thread> thrdsComputeLobbies;
+    
+    std::thread thrdCheckNew(CheckNewConnections, std::ref(TCPListener), std::ref(lobbies), std::ref(thrdsComputeLobbies));
 
-	LobbyNode connections;
-
-	while (true) {
-		CheckNewConnections(sockTCP, connections);
-		ReceiveDataTCP(sockTCP, connections);
-		ReceiveDataUDP(sockUDP, connections);
-	}
-
-	closesocket(sockUDP);
-	closesocket(sockTCP);
-	WSACleanup();
+    thrdCheckNew.join();
+    return 0;
 }
