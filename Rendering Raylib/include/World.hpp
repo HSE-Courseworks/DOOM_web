@@ -15,6 +15,7 @@ public:
 
     World(const std::string& map, const std::string& textures);
     void addPlayer(const Player& player);
+    void addPlayer(int id);
     void removePlayer(const int idPlayer);
     void updateWorld(const float speed);
     void showWorld() const;

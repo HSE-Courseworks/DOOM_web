@@ -28,6 +28,10 @@ void World::addPlayer(const Player& player)
     }
 }
 
+void World::addPlayer(int id) {
+    players[id] = Player();
+}
+
 void World::removePlayer(int idPlayer)
 {
     int idx = std::find(vecId.begin(), vecId.end(), idPlayer) - vecId.begin();
