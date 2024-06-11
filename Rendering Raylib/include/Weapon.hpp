@@ -1,10 +1,10 @@
 #ifndef WEAPON_HPP
 #define WEAPON_HPP
 
+#include "Tools.hpp"
 #include <raylib.h>
 #include <string>
 #include <vector>
-#include "Tools.hpp"
 
 #define POS_X_LEFT (350)
 #define POS_Y_LEFT (480)
