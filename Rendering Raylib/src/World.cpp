@@ -48,11 +48,7 @@ void World::addPlayer(const int id, const std::string &nickName)
 }
 
 void World::addPlayer(int id) {
-    players[id] = Player();
-}
-
-void World::addPlayer(int id) {
-    players[id] = Player();
+    players[id] = {true, new Player()};
 }
 
 void World::removePlayer(const int id)
