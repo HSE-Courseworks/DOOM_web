@@ -45,7 +45,7 @@ int main()
         TraceLog(LOG_ERROR, "Connection error. The client has not connected to a serv.");
     UDPsock.bind(ClientUDPPort);
     TCPsock.setBlocking(false);
-    //UDPsock.setBlocking(false);
+    UDPsock.setBlocking(false);
     while (!WindowShouldClose())
     {
         CheckNewData(TCPsock, UDPsock, game);
