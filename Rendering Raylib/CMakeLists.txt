@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10...3.27) # FetchContent is available in 3.11+
+cmake_minimum_required(VERSION 3.10...3.27) 
 project(DOOM_web)
 
 set(CMAKE_CXX_STANDARD_REQUIRED True)
@@ -39,8 +39,8 @@ endif()
 find_package(SFML COMPONENTS network REQUIRED)
 
 # Our Project
-include_directories(${PROJECT_SOURCE_DIR}/include ${PROJECT_SOURCE_DIR}/src "C:/Program Files/SFML-2.6.1/include")
-file(GLOB all_SRCS "${PROJECT_SOURCE_DIR}/include/*.hpp" "${PROJECT_SOURCE_DIR}/src/*.cpp")
+include_directories(${PROJECT_SOURCE_DIR}/include "C:/Program Files/SFML-2.6.1/include")
+file(GLOB all_SRCS "${PROJECT_SOURCE_DIR}/src/*.cpp")
 add_executable(main ${all_SRCS})
 target_link_libraries(main raylib sfml-network)
 

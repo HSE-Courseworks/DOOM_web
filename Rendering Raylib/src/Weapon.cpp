@@ -1,31 +1,31 @@
 #include "Weapon.hpp"
 
-Weapon::Weapon(const std::string& gun, int cartridges, int oneClip, int maxCartridges, int damage) :
-    actions(), cartridges(cartridges), oneClip(oneClip), maxCartridges(maxCartridges),
-    curCartridge(oneClip), damage(damage)
+Weapon::Weapon(const std::string &gun, const int cartridges, const int oneClip, const int damage) : 
+    cartridges(cartridges), oneClip(oneClip), curCartridge(oneClip), damage(damage)
 {
     cartridgesTexture = LoadTexture("resources/cartridges.png");
     redScope = LoadTexture("resources/scope.png");
-    font = LoadFontEx("resources/Calibri.ttf", 30, nullptr, 0);
-    bgCarts = {CARTRIDGES_X, CARTRIDGES_Y, (float)cartridgesTexture.width + 2 * THICKNESS_FRAME, 
-                (float)cartridgesTexture.height + 2 * THICKNESS_FRAME};
+    font = LoadFontEx("resources/Calibri.ttf", FONT_SIZE_INFO, nullptr, 0);
+    bgCarts = {CARTRIDGES_X, CARTRIDGES_Y, cartridgesTexture.width + 2.0f * THICKNESS_FRAME,
+                cartridgesTexture.height + 2.0f * THICKNESS_FRAME};
     soundShoot = LoadSound("resources/shoot.mp3");
     soundReload = LoadSound("resources/reload.mp3");
     soundEmpty = LoadSound("resources/empty.mp3");
+    soundGet = LoadSound("resources/getCartridges.mp3");
 
-    std::vector<std::string> files = {"/shootRight.png", "/shootLeft.png", "/reloadLeft.png", "/reloadRight.png"};
+    std::vector<std::string> files = {"/shootRight.png", "/shootLeft.png", 
+                                        "/reloadLeft.png", "/reloadRight.png"};
     for (size_t i = 0; i < files.size(); ++i) {
         actions.push_back(LoadTexture((gun + files[i]).c_str()));
-        animFrames.push_back({actions.back().width / WIDTH, actions.back().height / HEIGHT});
+        animFrames.push_back({actions.back().width / WIDTH_ANIM, actions.back().height / HEIGHT_ANIM});
     }
 }
 
-void Weapon::showGun() const 
-{    
-    Vector2 pos; Rectangle crop = {0, 0, WIDTH, HEIGHT};
-    if (leftHand) pos = {POS_X_LEFT, POS_Y_LEFT};
-    else pos = {POS_X_RIGHT, POS_Y_RIGHT};
-
+void Weapon::showGun() const
+{
+    Vector2 pos = leftHand ? Vector2{POS_GUN_X_LEFT, POS_GUN_Y_LEFT} : 
+                            Vector2{POS_GUN_X_RIGHT, POS_GUN_Y_RIGHT};
+    Rectangle crop = {0, 0, WIDTH_ANIM, HEIGHT_ANIM};
     int idxR = actions.size() - 1 - leftHand;
     int idxS = leftHand;
 
@@ -33,44 +33,44 @@ void Weapon::showGun() const
         DrawTextureRec(actions[idxR], crop, pos, WHITE);
     }
     else if (isReloading) {
-        crop.x = (float)WIDTH * (curFrameReload % animFrames[idxR].first);
-        crop.y = (float)HEIGHT * (curFrameReload / animFrames[idxR].first);
+        crop.x = WIDTH_ANIM * (curFrameReload % animFrames[idxR].first);
+        crop.y = HEIGHT_ANIM * (curFrameReload / animFrames[idxR].first);
         DrawTextureRec(actions[idxR], crop, pos, WHITE);
     }
     else if (isShooting) {
-        crop.x = (float)WIDTH * (curFrameShoot % animFrames[idxS].first);
-        crop.y = (float)HEIGHT * (curFrameShoot / animFrames[idxS].first);
+        crop.x = WIDTH_ANIM * (curFrameShoot % animFrames[idxS].first);
+        crop.y = HEIGHT_ANIM * (curFrameShoot / animFrames[idxS].first);
         DrawTextureRec(actions[idxS], crop, pos, WHITE);
 
         if (hitTarget && curFrameShoot) DrawTexture(redScope, SCOPE_X, SCOPE_Y, WHITE);
     }
 }
 
-void Weapon::setFlagLeftHand(bool flag)
-{
-    leftHand = flag;
-}
-
-bool Weapon::getFlagLeftHand() const
-{
-    return leftHand;
-}
-
 void Weapon::showAmmunition() const
 {
     DrawRectangleRec(bgCarts, swamp);
     DrawRectangleLinesEx(bgCarts, THICKNESS_FRAME, BLACK);
-    DrawTexture(cartridgesTexture, CARTRIDGES_X + THICKNESS_FRAME, CARTRIDGES_Y + THICKNESS_FRAME, WHITE);
+    DrawTexture(cartridgesTexture, CARTRIDGES_X + THICKNESS_FRAME, 
+                                    CARTRIDGES_Y + THICKNESS_FRAME, WHITE);
 
-    const char *textInfo = TextFormat("%i/%i", curCartridge, cartridges - curCartridge);
-	Vector2 bounds = MeasureTextEx(font, textInfo, 30, 0);
-    Rectangle bgInfo = {INFO_CART_X, INFO_CART_Y, 3 * THICKNESS_FRAME + bounds.x, 3 * THICKNESS_FRAME + bounds.y};
+    const char *textInfo = TextFormat("%d/%d", curCartridge, cartridges);
+    Vector2 bounds = MeasureTextEx(font, textInfo, FONT_SIZE_INFO, 0);
+    Rectangle bgInfo = {INFO_CART_X, INFO_CART_Y, 3 * THICKNESS_FRAME + bounds.x, 
+                                                    3 * THICKNESS_FRAME + bounds.y};
     DrawRectangleRec(bgInfo, GRAY);
     DrawRectangleLinesEx(bgInfo, THICKNESS_FRAME, BLACK);
-    DrawTextEx(font, textInfo, {INFO_CART_X + 1.5 * THICKNESS_FRAME, INFO_CART_Y + 2 * THICKNESS_FRAME}, 30, 0, BLACK);
+    DrawTextEx(font, textInfo, {INFO_CART_X + 1.5f * THICKNESS_FRAME, 
+                INFO_CART_Y + 2 * THICKNESS_FRAME}, FONT_SIZE_INFO, 0, BLACK);
 }
 
-int Weapon::shoot(std::pair<float, int> infoShoot) 
+void Weapon::updateAmmunition(const int cntCartridges)
+{
+    cartridges = std::min(cartridges + cntCartridges, MAX_CARTRIDGES);
+    SetSoundVolume(soundGet, VOLUME * 2);
+    PlaySound(soundGet);
+}
+
+int Weapon::shoot(const std::pair<float, int>& infoShoot)
 {
     if (isShooting || isReloading) return 0;
 
@@ -81,26 +81,26 @@ int Weapon::shoot(std::pair<float, int> infoShoot)
     }
 
     int dmg = std::max(0, damage - static_cast<int>(infoShoot.first / SCALE_DAMAGE));
-    curCartridge--; cartridges--;
+    curCartridge--;
     SetSoundVolume(soundShoot, VOLUME);
     PlaySound(soundShoot);
 
     isShooting = true;
-    if (dmg != 0 && infoShoot.second) hitTarget = true;
-    // Запустить анимацию выстрела
+    if (dmg != 0 && infoShoot.second > 0) { hitTarget = true; }
+    // Запускается анимацию выстрела
     return dmg;
 }
 
 void Weapon::reload()
 {
-    if (isShooting || isReloading || curCartridge == oneClip || cartridges - curCartridge == 0) 
+    if (isShooting || isReloading || curCartridge == oneClip || cartridges == 0)
         return;
 
     SetSoundVolume(soundReload, VOLUME);
     PlaySound(soundReload);
 
     isReloading = true;
-    // Запустить анимацию перезарядки
+    // Запускается анимацию перезарядки
 }
 
 void Weapon::updateNextFrameShoot()
@@ -118,20 +118,28 @@ void Weapon::updateNextFrameShoot()
 void Weapon::updateNextFrameReload()
 {
     int idx = actions.size() - 1 - leftHand;
-    if (curFrameReload >= animFrames[idx].first * animFrames[idx].second) { 
+    if (curFrameReload >= animFrames[idx].first * animFrames[idx].second)
+    {
         curFrameReload = 0;
-        curCartridge = std::min(oneClip, cartridges);  
+        cartridges += curCartridge;
+        curCartridge = std::min(oneClip, cartridges);
+        cartridges -= curCartridge;
         isReloading = false;
     }
     else curFrameReload++;
 }
 
-bool Weapon::checkShooting() const
+void Weapon::setFlagLeftHand(bool flag) { leftHand = flag; }
+
+void Weapon::setAmmunition(const int countCartridges, const int oneClipCount)
 {
-    return isShooting;
+    cartridges = countCartridges;
+    oneClip = oneClipCount;
+    curCartridge = oneClipCount;
 }
 
-bool Weapon::checkReloading() const
-{
-    return isReloading;
-}
+bool Weapon::getFlagLeftHand() const { return leftHand; }
+
+bool Weapon::checkShooting() const { return isShooting; }
+
+bool Weapon::checkReloading() const { return isReloading; }
