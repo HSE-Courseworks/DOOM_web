@@ -6,8 +6,8 @@ RAYLIB_PATH        ?= C:/raylib/raylib
 COMPILER_PATH      ?= C:/raylib/w64devkit/bin
 PLATFORM           ?= PLATFORM_DESKTOP
 RAYLIB_LIBTYPE     ?= STATIC
-BUILD_MODE         ?= RELEASE
-PLATFORM_OS=WINDOWS
+BUILD_MODE         ?= DEBUG
+PLATFORM_OS         = WINDOWS
 export PATH := $(COMPILER_PATH):$(PATH)
 
 ifeq ($(PLATFORM),PLATFORM_WEB)
@@ -71,7 +71,7 @@ endif
 
 INCLUDE_PATHS = -I. -I$(RAYLIB_PATH)/src -I$(RAYLIB_PATH)/src/external -Iinclude -I./lib/include
 LDFLAGS = -L. -L$(RAYLIB_RELEASE_PATH) -L$(RAYLIB_PATH)/src
-LDLIBS = -lraylib -lopengl32 -lgdi32 -lwinmm
+LDLIBS = -lraylib -lopengl32 -lgdi32 -lwinmm 
 
 ifeq ($(PLATFORM),PLATFORM_WEB)
     LDLIBS = $(RAYLIB_RELEASE_PATH)/web/libraylib.a
@@ -79,7 +79,7 @@ endif
 
 SRC_DIR = src
 OBJ_DIR = obj
-OBJS ?= src/main.cpp src/Fps.cpp src/Tools.cpp src/World.cpp src/Map.cpp src/Player.cpp src/Weapon.cpp
+OBJS ?= src/main.cpp src/Fps.cpp src/Tools.cpp src/World.cpp src/Map.cpp src/Player.cpp src/Weapon.cpp src/Client.cpp
 
 all:
 	$(MAKE) $(PROJECT_NAME)
