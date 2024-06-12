@@ -12,7 +12,7 @@ body {
     font-family: 'Poppins', sans-serif;
     font-weight: 400;
     color: white;
-    font-size: 16px;
+    font-size: 20px;
     width: auto;
 }
 
@@ -32,17 +32,16 @@ img {
 
 .container {
     width: auto;
-    margin-inline: 50px;
+    margin-inline: 13%;
 }
 
 header {
-    padding: 50px 0;
+    padding: 2.65% 0;
 }
 
 header .logo {
     font-size: 29px;
     font-weight: 800;
-    text-transform: uppercase;
 }
 
 header nav {
@@ -144,18 +143,19 @@ header nav ul li.btn a:hover {
     font-size: 20px;
     border-radius: 20px;
     transition: all 500ms ease;
-    margin-bottom: 40px;
+    margin: 60px 0;
 }
 
 html {
     scroll-behavior: smooth;
     overflow-x: hidden;
     overflow-y: scroll;
+    font-size: 62.5%;
 }
 
 .hero .info .btn-divisor {
     font-size: 30px;
-    padding: 20px 0;
+    padding: 70px 0;
     text-align: center;
 }
 
@@ -166,36 +166,50 @@ html {
 
 .hero img {
     position: absolute;
-    top: -1px;
-    left: 660px;
-    width: 55%;
+    top: -80px;
+    left: 1000px;
+    width: 45%;
 }
 
 .some-info {
     background: black;
     width: 100%;
-    padding-bottom: 1000px;
 }
 
 .some-info .pictures {
-    padding-bottom: 800px;
+    padding-top: 70px;
+    padding-bottom: 20px;
 }
 
-.some-info .pictures .img1 {
-    position: relative;
-    padding-top: 60px;
-    width: 50%;
+.some-info .pictures .line{
+    display: flex;
+    justify-content: space-between;
+    padding-bottom: 50px;
 }
 
-.some-info .pictures .img2 {
-    position: absolute;
-    width: 50%;
-    top: 1400px;
-    left: 550px;
+.some-info .pictures .col{
+    margin-right: 50px;
+}
+
+.some-info .pictures .line img {
+    transition: all 500ms ease;
+}
+
+.some-info .pictures .line img:hover {
+    transform: scale(1.1);
 }
 
 .some-info .about-us {
     padding-bottom: 100px;
+    
+    margin-right: 13%;
+}
+
+
+.some-info .about-us .text {
+    padding-top: 100px;
+    float: right;
+    width: 636px;
 }
 
 .some-info .about-us h1 {
@@ -207,17 +221,17 @@ html {
 .some-info .about-us p {
     font-size: 24px;
     text-align: right;
-    float: right;
-    width: 636px;
     margin: 50px 0;
     padding-right: 30px;
-    right: -510px;
+    
 }
 
 .some-info .about-us .block {
+    padding-top: 100px;
     display: flex;
     justify-content: space-around;
-    padding-bottom: 30px;
+    padding-bottom: 5px;
+    padding-left: 20px;
 }
 
 .some-info .about-us .block a {
@@ -230,49 +244,46 @@ html {
 }
 
 .some-info .about-us .block img {
-    width: 215px;
+    width: 260px;
     border-radius: 50%;
     margin-right: 40px;
 }
 
 .some-info .about-us .first {
-    position: absolute;
-    top: 2156px;
     width: 435px;
+    
+}
+
+.some-info .about-us .block:hover {
+    transform: scale(1.1);
 }
 
 .some-info .about-us .second {
-    position: absolute;
-    top: 2441px;
     width: 346px;
 }
 
+.some-info .about-us .line {
+    display: flex;
+    justify-content: space-between;
+    margin-right: 3%;
+}
+
 .some-info .about-us .third {
-    position: absolute;
-    top: 2726px;
     width: 367px;
 }
 
 .some-info .about-us .fourth {
-    position: absolute;
-    top: 2726px;
-    width: 345px;
-    left: 700px
+    width: 412px;
 }
 
 
 
 .some-info .about-us .fifth {
-    position: absolute;
-    top: 3011px;
     width: 418px;
 }
 
 .some-info .about-us .sixth {
-    position: absolute;
-    top: 3011px;
     width: 412px;
-    left: 700px
 }
 
 footer .inf {
@@ -285,7 +296,6 @@ footer .inf {
 footer .inf .logo {
     font-size: 30px;
     font-weight: 700;
-    text-transform: uppercase;
 }
 
 footer .inf .topic {
@@ -349,14 +359,14 @@ footer p {
 
 .registration .line1 {
     position: absolute;
-    top: 430px;
-    left: 195px;
+    top: 433px;
+    left: 860px;
     z-index: 1;
 }
 
 .registration .line2 {
     position: absolute;
-    top: 724px;
+    top: 741px;
     left: -1px;
     z-index: 1;
 }
@@ -423,21 +433,38 @@ footer p {
     background: #957265;
 }
 
-.game p {
-    font-size: 33px;
-    font-weight: 700;
-    text-align: center;
-    padding-bottom: 100px;
-}
-
 .emscripten_border {
-    zoom: 50%;
     padding-bottom: 300px;
     display: flex;
     justify-content: space-around;
 }
 
 .emscripten_border canvas {
+    zoom: 100%;
     margin-top: 30px;
     margin-inline: auto;
+    outline: none;
+    cursor: crosshair;
+}
+
+.emscripten_border span input {
+    background: #483731;
+    padding: 13px 21px;
+    border-radius: 5px;
+    color: white;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 400;
+    font-size: 16px;
+    border: none;
+    transition: all 500ms ease;
+    display: block;
+    float: right;
+    position: absolute;
+    top: 1400px;
+    left: 895px;
+}
+
+.emscripten_border span input:hover {
+    cursor: pointer;
+    transform: scale(1.1);
 }
