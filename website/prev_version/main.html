@@ -1,0 +1,73 @@
+<!doctypehtml>
+<html lang=EN-us>
+    <head>
+        <meta charset=utf-8>
+        <meta content="text/html; charset=utf-8"http-equiv=Content-Type>
+        <title>raylib web game</title>
+        <meta content="raylib web game"name=title>
+        <meta content="New raylib web videogame, developed using raylib videogames library"name=description>
+        <meta content="raylib, programming, examples, html5, C, C++, library, learn, games, videogames"name=keywords>
+        <meta content="width=device-width"name=viewport>
+        <meta content=website property=og:type><meta content="raylib web game"property=og:title><meta content=image/png property=og:image:type>
+        <meta content="New raylib web videogame, developed using raylib videogames library"property=og:image:alt>
+        <meta content=https://www.raylib.com/common/raylib_logo.png property=og:image><meta content="raylib - example"property=og:site_name>
+        <meta content=https://www.raylib.com/games.html property=og:url>
+        <meta content="New raylib web videogame, developed using raylib videogames library"property=og:description>
+        <meta content=summary_large_image name=twitter:card><meta content=@raysan5 name=twitter:site>
+        <meta content="raylib web game"name=twitter:title>
+        <meta content=https://www.raylib.com/common/raylib_logo.png name=twitter:image>
+        <meta content="New raylib web videogame, developed using raylib videogames library"name=twitter:image:alt>
+        <meta content=https://www.raylib.com/games.html name=twitter:url>
+        <meta content="New raylib web videogame, developed using raylib videogames library"name=twitter:description>
+        <link href=https://www.raylib.com/favicon.ico rel="shortcut icon">
+        <link rel="stylesheet" href="css/main.css">
+    </head>
+    <body>
+        <div class="wrapper">
+            <header class="container">
+                <span class="logo">3D Strike</span>
+                <nav>
+                    <ul>
+                        <li><a href="index.html">Home</a></li>
+                        <li class="active"><a href="main.html">Game</a></li>
+                        <li class="btn"><a href="login.html">Log in</a></li>
+                    </ul>
+                </nav>
+            </header>
+
+            <div class="ref-sequence">
+                <a href="index.html">Home ></a>
+                <a href="main.html"> Game</a>
+            </div>
+            <div hidden id=header>
+                <a href=https://www.raylib.com id=logo></a>
+                <div class=spinner id=spinner></div>
+                <div class=emscripten id=status>Downloading...</div>
+                <span hidden id=controls><span><input onclick='location.href="https://github.com/raysan5/raylib"'type=button value="📜 SOURCE CODE"></span><span><input onclick=Module.requestFullscreen(!1,!1) type=button value="🖵 FULLSCREEN"></span><span><input onclick=toggleAudio() type=button value="🔇 MUTE"id=btn-audio></span></span>
+                <div hidden class=emscripten>
+                    <progress hidden id=progress max=100 value=0></progress>
+                </div>
+            </div>
+            <div class=emscripten_border>
+                <canvas class=emscripten id=canvas oncontextmenu=event.preventDefault() tabindex=-1></canvas>
+            </div>
+        </div>    
+
+        <div class="wrapper1">
+            <footer class="container">
+                <div class="inf">
+                    <span class="logo">3D Strike</span>
+                    <span class="topic">Course work 2023-2024</span>
+                    <span><a href="login.html">Log In</a></span>
+                </div>
+                <hr>
+                <p>HSE 22SE 2023-2024</p>
+            </footer>
+        </div>
+        <script src=https://cdn.jsdelivr.net/gh/eligrey/FileSaver.js/dist/FileSaver.min.js></script>
+        <script>function saveFileFromMEMFSToDisk(e,a){var i,o=FS.readFile(e);i=new Blob([o.buffer],{type:"application/octet-binary"}),saveAs(i,a)}</script>
+        <script>var statusElement=document.querySelector("#status"),progressElement=document.querySelector("#progress"),spinnerElement=document.querySelector("#spinner"),Module={preRun:[],postRun:[],print:function(){var e=document.querySelector("#output");return e&&(e.value=""),function(t){arguments.length>1&&(t=Array.prototype.slice.call(arguments).join(" ")),console.log(t),e&&(e.value+=t+"\n",e.scrollTop=e.scrollHeight)}}(),printErr:function(e){arguments.length>1&&(e=Array.prototype.slice.call(arguments).join(" ")),console.error(e)},canvas:function(){var e=document.querySelector("#canvas");return e.addEventListener("webglcontextlost",(function(e){alert("WebGL context lost. You will need to reload the page."),e.preventDefault()}),!1),e}(),setStatus:function(e){if(Module.setStatus.last||(Module.setStatus.last={time:Date.now(),text:""}),e!==Module.setStatus.last.text){var t=e.match(/([^(]+)\((\d+(\.\d+)?)\/(\d+)\)/),n=Date.now();t&&n-Module.setStatus.last.time<30||(Module.setStatus.last.time=n,Module.setStatus.last.text=e,t?(e=t[1],progressElement.value=100*parseInt(t[2]),progressElement.max=100*parseInt(t[4]),progressElement.hidden=!0,spinnerElement.hidden=!1):(progressElement.value=null,progressElement.max=null,progressElement.hidden=!0,e||(spinnerElement.style.display="none")),statusElement.innerHTML=e)}},totalDependencies:0,monitorRunDependencies:function(e){this.totalDependencies=Math.max(this.totalDependencies,e),Module.setStatus(e?"Preparing... ("+(this.totalDependencies-e)+"/"+this.totalDependencies+")":"All downloads complete.")}};Module.setStatus("Downloading..."),window.onerror=function(){Module.setStatus("Exception thrown, see JavaScript console"),spinnerElement.style.display="none",Module.setStatus=function(e){e&&Module.printErr("[post-exception status] "+e)}}</script>
+        <script>var audioBtn=document.querySelector("#btn-audio");const audioContexList=[];function toggleAudio(){var t=!1;audioContexList.forEach((e=>{"suspended"==e.state?(e.resume(),t=!0):"running"==e.state&&e.suspend()})),audioBtn.value=t?"🔇 MUTE":"🔈 RESUME"}self.AudioContext=new Proxy(self.AudioContext,{construct(t,e){const n=new t(...e);return audioContexList.push(n),"suspended"==n.state&&(audioBtn.value="🔈 RESUME"),n}})</script>
+        <script src=main.js async></script>
+    </body>
+</html>
