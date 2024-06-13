@@ -1,8 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700;800&display=swap');
 
 *,
-*::after,
-*::before {
+::after,
+::before {
     box-sizing: border-box;
     padding: 0;
     margin: 0;
@@ -14,10 +14,14 @@ body {
     color: white;
     font-size: 20px;
     width: auto;
+    background: black;
 }
 
 a {
     text-decoration: none;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 400;
+    color: white;
 }
 
 img {
@@ -27,7 +31,6 @@ img {
 .wrapper {
     background: linear-gradient(180deg, rgba(0,0,0,1) 0%, rgb(49, 39, 31) 100%);
     background-size: auto;
-    width: 100%;
 }
 
 .container {
@@ -288,7 +291,9 @@ html {
 
 footer .inf {
     display: flex;
-    justify-content: space-around;
+    justify-content: space-between;
+    margin-inline: auto;
+    width: 80%;
     padding-top: 100px;
     padding-bottom: 30px;
 }
@@ -315,12 +320,6 @@ footer p {
     text-align: center;
 }
 
-.wrapper1 {
-    background: black;
-    background-size: auto;
-    width: 100%;
-}
-
 .active-btn a {
     background:  #957265;
     padding: 13px 21px;
@@ -328,9 +327,10 @@ footer p {
 }
 
 .ref-sequence {
-    text-align: center;
+    display: flex;
+    justify-content: center;
     font-size: 16px;
-    padding: 40px 0;
+    margin: 40px 0;
 }
 
 .ref-sequence a {
@@ -433,6 +433,23 @@ footer p {
     background: #957265;
 }
 
+
+.download {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 30px;
+
+}
+.download a {
+    transition: all 500ms ease;
+    text-transform: uppercase;
+    font-size: 24px;
+}
+
+.download a:hover {
+    color: #957265;
+}
+
 .emscripten_border {
     padding-bottom: 300px;
     display: flex;
@@ -460,7 +477,7 @@ footer p {
     display: block;
     float: right;
     position: absolute;
-    top: 1400px;
+    top: 1500px;
     left: 895px;
 }
 
