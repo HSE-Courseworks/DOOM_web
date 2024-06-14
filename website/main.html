@@ -53,22 +53,24 @@
                 <a href="index.html">Home ></a>
                 <a href="main.html"> Game</a>
             </div>
-        <div class=emscripten_border>
-            
-            <canvas class=emscripten id=canvas oncontextmenu=event.preventDefault() tabindex=-1></canvas>
-            <span><input onclick=Module.requestFullscreen(!1,!1) type=button value="FULLSCREEN"></span>
+
+            <div class="container download">
+                <a href="desktop_version/3D_strike.zip" download >Download desktop version</a>
+            </div>
+            <div class=emscripten_border>
+                <canvas class=emscripten id=canvas oncontextmenu=event.preventDefault() tabindex=-1></canvas>
+                <span><input onclick=Module.requestFullscreen(!1,!1) type=button value="FULLSCREEN"></span>
+            </div>
         </div>
-        <div class="wrapper1">
-            <footer class="container">
-                <div class="inf">
-                    <span class="logo">3D Strike</span>
-                    <span class="topic">Course work 2023-2024</span>
-                    <span><a href="login.html">Log In</a></span>
-                </div>
-                <hr>
-                <p>HSE 22SE 2023-2024</p>
-            </footer>
-        </div>
+        <footer class="container">
+            <div class="inf">
+                <span class="logo">3D Strike</span>
+                <span class="topic">Course work 2023-2024</span>
+                <span><a href="login.html">Log In</a></span>
+            </div>
+            <hr>
+            <p>HSE 22SE 2023-2024</p>
+        </footer>
         
         <script src=https://cdn.jsdelivr.net/gh/eligrey/FileSaver.js/dist/FileSaver.min.js></script>
         <script>function saveFileFromMEMFSToDisk(e,a){var i,o=FS.readFile(e);i=new Blob([o.buffer],{type:"application/octet-binary"}),saveAs(i,a)}</script>
