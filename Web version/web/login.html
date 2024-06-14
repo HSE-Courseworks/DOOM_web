@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Log In</title>
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+    <div class="wrapper1">
+        <header class="container">
+            <span class="logo">3D Strike</span>
+            <nav>
+                <ul>
+                    <li><a href="index.html">Home</a></li>
+                    <li><a onclick="checkIfLoggedIn()" href="main.html">Game</a></li>
+                    <li class="active-btn"><a href="login.html">Log in</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <div class="ref-sequence container">
+            <a href="index.html">Home ></a>
+            <a href="login.html"> Log In</a>
+        </div>
+
+        <div class="text container">
+            <p class="big-text">Please log in</p>
+            <p class="small-text">We use your personal data for better usage of our web-site</p>
+        </div>
+
+        <div class="registration">
+            <img class="line1" src="img/line1.svg">
+            <img class="line2" src="img/line2.svg">
+            <div class="container">
+                <h1>Authorization form</h1>
+                <form>
+                    <div class="input inline">
+                        <div>
+                            <label>Username</label>
+                            <input id="username" type="text">
+                        </div>
+
+                        <div>
+                            <label>Password</label>
+                            <input id="password" type="password">
+                        </div>
+                    </div>
+
+                    <label>Email address</label>
+                    <input id="emailField" class="one-line" type="email">
+
+                    <button onclick="checkInput()" type="button">Log In</button>
+                </form>
+            </div>
+            
+
+        </div>
+
+        <footer class="container">
+            <div class="inf">
+                <span class="logo">3D Strike</span>
+                <span class="topic">Course work 2023-2024</span>
+                <span><a href="login.html">Log In</a></span>
+            </div>
+            <hr>
+            <p>HSE 22SE 2023-2024</p>
+        </footer>
+    </div>
+
+    <script>
+        const user = {
+            'name': '',
+            'password': '',
+            'email': '',
+            'loggedIn': false
+        };
+
+        function checkInput() {
+            let username = document.querySelector("#username").value;
+            let password = document.querySelector("#password").value;
+            let email = document.querySelector("#emailField").value;
+            if (username.length == 0 || password.length == 0 || email.length == 0) alert("Fill the gaps");
+            else if (!email.includes('@') || !email.includes('.')) alert("Incorrect email address");
+            else {
+                user.name = username;
+                user.password = password;
+                user.email = email;
+                user.loggedIn = true;
+            }
+        }
+
+        function checkIfLoggedIn() {
+            if (user.loggedIn == false) alert("Please log in");
+        }
+    </script>
+
+</body>
+</html>

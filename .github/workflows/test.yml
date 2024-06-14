@@ -1,0 +1,17 @@
+name: Testing functions
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: install
+      run: sudo apt-get install xorg-dev libglu1-mesa-dev
+    - name: Run Test
+      run: cd tests && cmake -S . -B build && cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-Werror" && cmake --build build && cd build && ctest

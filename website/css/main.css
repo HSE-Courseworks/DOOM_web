@@ -327,10 +327,9 @@ footer p {
 }
 
 .ref-sequence {
-    display: flex;
-    justify-content: center;
+    text-align: center;
     font-size: 16px;
-    margin: 40px 0;
+    padding: 40px 0;
 }
 
 .ref-sequence a {
@@ -432,7 +431,6 @@ footer p {
 .registration form button:hover {
     background: #957265;
 }
-
 
 .download {
     display: flex;

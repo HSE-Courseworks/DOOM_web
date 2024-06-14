@@ -1,56 +1,68 @@
 #include "raylib.h"
-#include "World.hpp"
-#include "Fps.hpp"
+#include "ScreenSaver.hpp"
+
 #include <iostream>
-#include <cmath>
 
-int main()
+int main() 
 {
-    SetConfigFlags(FLAG_VSYNC_HINT);
-    InitWindow(1920, 1080, "Raycasting 3D game");
-    HideCursor(); SetTargetFPS(60);
+    InitWindow(WIDTH_RENDER, HEIGHT_RENDER, "3D Strike: C++ Offensive");
     InitAudioDevice();
+    SetExitKey(KEY_NULL);
+    SetConfigFlags(FLAG_VSYNC_HINT);
+    SetTargetFPS(60);
 
-    SetMousePosition(GetRenderWidth() / 2, GetRenderHeight() / 2);
-    Fps curFps; World game("resources/maze.txt", "resources/textures.txt");
+    // Все, кто предоставит никнейм, будут считаться объектом класса User
+    // `active` показывает, активен ли сейчас user или нет (запущен ли у него .exe)
+    // ScreenSaver - класс по управлению вывода нужной информации (Pages) для user
 
-    const Vector2 sizePlayer = {game.gameMap.getWallSize().x / 4.0f, game.gameMap.getWallSize().x / 4.0f};
-    Vector2 pos_1;
-    pos_1.x = game.gameMap.getFrame().x + game.gameMap.getWallSize().x * 3 / 2.0f;
-    pos_1.y = game.gameMap.getFrame().y + game.gameMap.getWallSize().y * 3 / 2.0f;
-    Vector2 pos_2;
-    pos_2.x = game.gameMap.getFrame().x + game.gameMap.getWallSize().x * (game.gameMap.getMazeSize().x - 3 / 2.0f);
-    pos_2.y = game.gameMap.getFrame().y + game.gameMap.getWallSize().y * (game.gameMap.getMazeSize().y - 3 / 2.0f);
-    // Vector2 pos_3;
-    // pos_3.x = game.gameMap.getFrame().x + game.gameMap.getWallSize().x * (game.gameMap.getMazeSize().x - 3 / 2.0f);
-    // pos_3.y = game.gameMap.getFrame().y + game.gameMap.getWallSize().y * 3 / 2.0f;
-    // Vector2 pos_4;
-    // pos_4.x = game.gameMap.getFrame().x + game.gameMap.getWallSize().x * 3 / 2.0f;
-    // pos_4.y = game.gameMap.getFrame().y + game.gameMap.getWallSize().y * (game.gameMap.getMazeSize().y - 3 / 2.0f);
+    World world("resources/maze.txt", "resources/textures.txt");
+    std::vector<ScreenSaver *> screenSavers;
+    screenSavers.push_back(new ScreenSaver(User(1, "Lolbl4")));
+    screenSavers.push_back(new ScreenSaver(User(2, "Sadness")));
+    screenSavers.push_back(new ScreenSaver(User(3, "Xlopchik13")));
+    int cur = 0;
 
-    game.addPlayer(Player(sizePlayer, pos_1, 0, softRed, "resources/player_1.png"));
-    game.addPlayer(Player(sizePlayer, pos_2, 180, softBlue, "resources/player_2.png"));
-    // game.addPlayer(Player(sizePlayer, pos_3, 180, softPink, "resources/player_3.png"));
-    // game.addPlayer(Player(sizePlayer, pos_4, 0, softYellow, "resources/player_4.png"));
-
-    Music music = LoadMusicStream("resources/backGroundMusic.mp3");
-    music.looping = true;
-    SetMusicVolume(music, 1);
-    PlayMusicStream(music);
-    while (!WindowShouldClose())
-    {
-        UpdateMusicStream(music);
+    while (!WindowShouldClose()) {
         BeginDrawing();
         ClearBackground(BLACK);
-        game.updateWorld(GetFrameTime());
-        game.showWorld();
-        curFps.show();
+
+        if (screenSavers[cur]->getPage() == Pages::GAME && !screenSavers[cur]->getUser().getFlagInGame()) {
+            int id = screenSavers[cur]->getUser().getId();
+            std::string nickName = screenSavers[cur]->getUser().getNickName();
+
+            screenSavers[cur]->getUser().setFlagInGame(true);
+            world.addPlayer(id, nickName);
+            screenSavers[cur]->setWorld(&world);
+            world.timer.start();
+        }
+        else if (screenSavers[cur]->getPage() == Pages::MENU && screenSavers[cur]->getUser().getFlagInGame()) {
+            int id = screenSavers[cur]->getUser().getId();
+            screenSavers[cur]->getUser().setFlagInGame(false);
+            world.removePlayer(id);
+            screenSavers[cur]->setWorld(nullptr);
+            if (!world.getPlayersNumber()) { world.reboot(); world.timer.stop(); }
+
+            // Игра закончена или все игроки отключились =>
+            // имеет смысл привести объект класса World в исходное состояние
+        }
+
+        bool exit = screenSavers[cur]->update();
+        screenSavers[cur]->show();
+
+        if (!world.getTimeEnd() && !world.timer.getLeftSeconds()) world.setTimeEnd(GetTime());
+        if (exit) break;
+
+        // Переключить user (нужно только для отладки, при мультиплеере нужно убрать)
+        if (IsKeyReleased(KEY_V)) {
+            cur = (cur + 1) % screenSavers.size();
+            Pages curPage = screenSavers[cur]->getPage();
+            if (curPage == Pages::GAME || curPage == Pages::RESURRECTION) HideCursor();
+            else ShowCursor();
+        }
+
         EndDrawing();
     }
-    game.removePlayer(1); game.removePlayer(2); 
-    // game.removePlayer(3); // game.removePlayer(4);
 
-    UnloadMusicStream(music);
     CloseAudioDevice();
     CloseWindow();
     return 0;

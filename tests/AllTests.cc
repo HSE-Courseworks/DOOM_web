@@ -4,14 +4,62 @@
 #include "../Rendering Raylib/include/Player.hpp"
 #include "../Rendering Raylib/include/World.hpp"
 #include "../Rendering Raylib/include/Weapon.hpp"
+#include "../Rendering Raylib/include/Timer.hpp"
+#include "../Rendering Raylib/include/ScoreTable.hpp"
+#include "../Rendering Raylib/include/PickUp.hpp"
+#include "../Rendering Raylib/include/User.hpp"
 #include "raylib.h"
 #include <fstream>
+#include <math.h>
+
+#define _USE_MATH_DEFINES
+#include <cmath>
+
+// FPS FUNCTIONS
+Fps::Fps()
+{
+	font = LoadFontEx("resources/Calibri.ttf", 30, nullptr, 0);
+}
+
+// TIMER FUNCTIONS
+Timer::Timer(const int duration) : duration(duration), leftTime(duration) {
+    backGround = {TIMER_X, TIMER_Y, TIMER_SIZE_X, TIMER_SIZE_Y};
+    prevTime = 0;
+}
+
+int Timer::getLeftSeconds() const {
+    return leftTime;
+}
+
+// SCORETABLE FUNCTIONS
+ScoreTable::ScoreTable() : gameInfo() {
+    inscriptions = {"Player", "K", "S", "D", "DMG", "KD"};
+}
+
+void ScoreTable::addPlayer(const int id, const std::string& nickName, const Color& color) {
+    gameInfo[id] = std::make_pair(std::make_tuple(nickName, 0, 0, 0, 0, 0), color);
+}
+
+void ScoreTable::deletePlayer(const int id) {
+    gameInfo.erase(id);
+}
+
+// PICKUP FUNTIONS
+PickUp::PickUp(const char symbol, const Vector2& pos, Texture* texture)
+    : symbol(symbol), isActive(true), timeGet(0), texture(texture), position(pos) {}
+
+PickUp::PickUp(const PickUp& other) {
+    symbol = other.symbol;
+    position = other.position;
+    isActive = other.isActive;
+    timeGet = other.timeGet;
+    texture = other.texture;
+}
 
 // MAP FUNCTIONS
 Map::Map(const std::string& filename) : 
-    scheme(), objects(), textures(), colors()
+    scheme(), objects(), pickUps(COUNT_PICKUP_ALL), textures(), colors()
 {
-    std::cout << 1;
     frame.width = SIZE_PIXEL_MAP; frame.height = SIZE_PIXEL_MAP;
     frame.x = THICKNESS_MAP * 2; frame.y = THICKNESS_MAP * 2;
 
@@ -22,10 +70,10 @@ Map::Map(const std::string& filename) :
         scheme.push_back(mazeLine);
     }
     file.close();
-    mazeSize.x = scheme.front().size();
-    mazeSize.y = scheme.size();      
-    wallSize.x = SIZE_PIXEL_MAP / mazeSize.x;
-    wallSize.y = SIZE_PIXEL_MAP / mazeSize.y;
+    mazeSize.x = scheme.front().size(); // Взять длину стенки миникарты
+    mazeSize.y = scheme.size();         // Взять ширину стенки миникарты
+    wallSize.x = WALL_SIZE;
+    wallSize.y = WALL_SIZE;
 }
 
 void Map::readTextures(const std::string &filename) 
@@ -45,13 +93,23 @@ void Map::readTextures(const std::string &filename)
 
 void Map::findObjects()
 {
-    Rectangle wall = {0, 0, wallSize.x, wallSize.y};    
+    Rectangle wall = {0, 0, wallSize.x, wallSize.y};
     int N = scheme.size(), M = scheme.front().size();
+
+    int posH = 0, posC = COUNT_PICKUP_CATEG, posA = COUNT_PICKUP_CATEG * 2;
     for (int i = 0; i < N; ++i)
     {
         for (int j = 0; j < M; ++j)
         {
-            if (scheme[i][j] != '.')
+            if (scheme[i][j] == 'H' || scheme[i][j] == 'C' || scheme[i][j] == 'A') {
+                float posX = frame.x + j * wallSize.x + WALL_SIZE / 2;
+                float posY = frame.y + i * wallSize.y + WALL_SIZE / 2;
+                PickUp pickup(scheme[i][j], {posX, posY}, &textures[scheme[i][j]]);
+                if (scheme[i][j] == 'H') pickUps[posH++] = pickup;
+                else if (scheme[i][j] == 'C') pickUps[posC++] = pickup;
+                else pickUps[posA++] = pickup;
+            }
+            else if (scheme[i][j] != '.')
             {
                 wall.x = frame.x + j * wallSize.x;
                 wall.y = frame.y + i * wallSize.y;
@@ -87,7 +145,7 @@ struct MapTest : public testing::Test {
 TEST_F(MapTest, getWallSize)
 {
   Vector2 v1 = mt->getWallSize(), v2 = {4, 2};
-  EXPECT_FLOAT_EQ(getDist2Points(v1, v2), 7.2111025);
+  EXPECT_FLOAT_EQ(getDist2Points(v1, v2), 18.439089);
 }
 
 TEST_F(MapTest, getFrame)
@@ -112,30 +170,26 @@ TEST_F(MapTest, readTextures)
 }
 
 // PLAYER FUNCTIONS
-Player::Player(const Vector2& size, const Vector2& pos, const float angle, const Color& color, const std::string& texture) : 
-    gun("../../Rendering Raylib/resources/guns/glock", 200, 20, 200, 10), color(color), sightDist(SIZE_PIXEL_MAP * 3), rotationAngle(angle),
-    FOV(VIEW_ANGLE), circlePoints(COUNT_POINTS), segment(COUNT_POINTS), drawInfo()
+Player::Player(const Vector2 &pos, const float angle, const Color &color, const std::string &nickName) : 
+    FOV(VIEW_ANGLE), circlePoints(COUNT_POINTS), sightDist(SIZE_PIXEL_MAP * 3), rotationAngle(angle), 
+    nickName(nickName), color(color), drawInfo(), segment(COUNT_POINTS)
 {
-    //texturePlayer = LoadTexture(texture.c_str());
+    backGroundH = {HEALTH_X, HEALTH_Y, BUFFS_SIZE + 2 * THICKNESS_FRAME, BUFFS_SIZE + 2 * THICKNESS_FRAME};
+    backGroundA = {ARMOR_X, ARMOR_Y, BUFFS_SIZE + 2 * THICKNESS_FRAME, BUFFS_SIZE + 2 * THICKNESS_FRAME};
 
-    //healthTexture = LoadTexture("../../Rendering Raylib/resources/health.png");
-	//font = LoadFontEx("../../Rendering Raylib/resources/Calibri.ttf", 30, nullptr, 0);
-    bgHealth = {HEALTH_X, HEALTH_Y, (float)healthTexture.width + 2 * THICKNESS_FRAME, 
-                (float)healthTexture.height + 2 * THICKNESS_FRAME};
-    //soundInjury = LoadSound("../../Rendering Raylib/resources/injury.mp3");
-
-    object.width = size.x; object.height = size.y;
     cameraPos.x = pos.x;
-    cameraPos.y = pos.y; 
-    object.x = pos.x - object.width / 2.0f;
-    object.y = pos.y - object.height / 2.0f;
+    cameraPos.y = pos.y;
     mapShiftX = pos.x - THICKNESS_MAP * 2;
     mapShiftY = pos.y - THICKNESS_MAP * 2;
 
-    mapDir[{0, 0}] = 0.0f; mapDir[{1, 0}] = 0.0f;
-    mapDir[{1, 1}] = M_PI / 4; mapDir[{0, 1}] = M_PI / 2;
-    mapDir[{-1, 1}] = 3 * M_PI / 4; mapDir[{-1, 0}] = M_PI;
-    mapDir[{-1, -1}] = 5 * M_PI / 4; mapDir[{0, -1}] = 3 * M_PI / 2;
+    mapDir[{0, 0}] = 0.0f;
+    mapDir[{1, 0}] = 0.0f;
+    mapDir[{1, 1}] = M_PI / 4;
+    mapDir[{0, 1}] = M_PI / 2;
+    mapDir[{-1, 1}] = 3 * M_PI / 4;
+    mapDir[{-1, 0}] = M_PI;
+    mapDir[{-1, -1}] = 5 * M_PI / 4;
+    mapDir[{0, -1}] = 3 * M_PI / 2;
     mapDir[{1, -1}] = 7 * M_PI / 4;
 }
 
@@ -144,19 +198,16 @@ float Player::getRotation() const
 	return rotationAngle;
 }
 
-const Vector2 Player::getPosition() const
+const Vector2& Player::getPosition() const { return cameraPos; }
+
+Vector2 Player::getSize() const
 {
-    return cameraPos;
+    return {2 * RADIUS, 2 * RADIUS};
 }
 
-const Vector2 Player::getSize() const
+bool Player::getFlagMap() const
 {
-    return {object.width, object.height};
-}
-
-bool Player::getFlagMiniMap() const
-{
-	return miniMap;
+	return map;
 }
 
 bool Player::getFlagShowLog() const
@@ -179,30 +230,30 @@ struct PlayerTest : public testing::Test {
   Player *pt;
   Map *mt;
   void SetUp() { mt = new Map("../../Rendering Raylib/resources/maze.txt"); 
-                pt = new Player({mt->getWallSize().x / 4, mt->getWallSize().x / 4}, {3, 7}, 0, softRed, "../../Rendering Raylib/resources/player_1.png"); }
+                pt = new Player({5, 5}, 40, softRed, "Ivan"); }
   void TearDown() { delete mt; delete pt; }
 };
 
 TEST_F(PlayerTest, getRotation)
 {
-  EXPECT_FLOAT_EQ(pt->getRotation(), 0);
+  EXPECT_FLOAT_EQ(pt->getRotation(), 40);
 }
 
 TEST_F(PlayerTest, getPosition)
 {
-  EXPECT_FLOAT_EQ(pt->getPosition().x, 3);
-  EXPECT_FLOAT_EQ(pt->getPosition().y, 7);
+  EXPECT_FLOAT_EQ(pt->getPosition().x, 5);
+  EXPECT_FLOAT_EQ(pt->getPosition().y, 5);
 }
 
 TEST_F(PlayerTest, getSize)
 {
-  EXPECT_FLOAT_EQ(pt->getSize().x, 2);
-  EXPECT_FLOAT_EQ(pt->getSize().y, 2);
+  EXPECT_FLOAT_EQ(pt->getSize().x, 4);
+  EXPECT_FLOAT_EQ(pt->getSize().y, 4);
 }
 
-TEST_F(PlayerTest, getFlagMiniMap)
+TEST_F(PlayerTest, getFlagMap)
 {
-  EXPECT_EQ(pt->getFlagMiniMap(), true);
+  EXPECT_EQ(pt->getFlagMap(), true);
 }
 
 TEST_F(PlayerTest, getFlagShowLog)
@@ -218,37 +269,63 @@ TEST_F(PlayerTest, SetAndgetId)
 
 // WORLD FUNCTIONS 
 World::World(const std::string& map, const std::string& textures) : 
-    gameMap(map), players(), vecId(), curPlayer(-1), lastFreeId(1)
+    gameMap(map), timer(120), scoreTable(), players(), fps()
 {
-    gameMap.findObjects();
     gameMap.readTextures(textures);
+    gameMap.findObjects();
     floor.width = GetRenderWidth();
     floor.height = GetRenderHeight() / 2.0f;
     floor.x = 0;
     floor.y = GetRenderHeight() / 2.0f;
+
+    Vector2 pos_1 = {gameMap.getFrame().x + WALL_SIZE * 3 / 2.0f, gameMap.getFrame().y + WALL_SIZE * 3 / 2.0f};
+    slots.push_back(std::make_pair(std::make_tuple(pos_1, 0, softRed), -1));
+
+    Vector2 pos_2 = {gameMap.getFrame().x + WALL_SIZE * (gameMap.getMazeSize().x - 3 / 2.0f), 
+                     gameMap.getFrame().y + WALL_SIZE * (gameMap.getMazeSize().y - 3 / 2.0f)};
+    slots.push_back(std::make_pair(std::make_tuple(pos_2, 180, softBlue), -1));
+
+    Vector2 pos_3 = {gameMap.getFrame().x + WALL_SIZE * (gameMap.getMazeSize().x - 3 / 2.0f),
+                     gameMap.getFrame().y + WALL_SIZE * 3 / 2.0f};
+    slots.push_back(std::make_pair(std::make_tuple(pos_3, 180, softPink), -1));
+
+    Vector2 pos_4 = {gameMap.getFrame().x + WALL_SIZE * 3 / 2.0f,
+                     gameMap.getFrame().y + WALL_SIZE * (gameMap.getMazeSize().y - 3 / 2.0f)};
+    slots.push_back(std::make_pair(std::make_tuple(pos_4, 0, softYellow), -1));
+    timeEnd = 0;
 }
 
-void World::addPlayer(const Player& player)
+void World::addPlayer(const int id, const std::string& nickName)
 {
-    if (players.size() != MAX_PLAYERS)
+    if (players.size() != MAX_PLAYERS && timer.getLeftSeconds() > 0)
     {
-        if (curPlayer == -1) curPlayer = 0;
-
-        players[lastFreeId] = player;
-        players[lastFreeId].setId(lastFreeId);
-        vecId.push_back(lastFreeId++);
+        Vector2 pos; float angle = 0; Color color;
+        for (auto& [slot, idPlayer] : slots) {
+            if (idPlayer == -1) {
+                std::tie(pos, angle, color) = slot;
+                idPlayer = id;
+                break;
+            }
+        }
+        players[id] = {true, new Player(pos, angle, color, nickName)};
+        players[id].second->setId(id);
+        scoreTable.addPlayer(id, nickName, color);
     }
 }
 
-void World::removePlayer(int idPlayer)
+void World::removePlayer(const int id)
 {
-    int idx = std::find(vecId.begin(), vecId.end(), idPlayer) - vecId.begin();
-    //vecId.erase(vecId.begin() + idx);
-    players.erase(idPlayer);
-
-    if (players.empty()) curPlayer = -1;
-    if (curPlayer == idx)
-        curPlayer = idx % vecId.size();
+    for (auto& [slot, idPlayer] : slots) {
+        if (idPlayer == id) {
+            idPlayer = -1;
+            break;
+        }
+    }
+    Player* playerForDelete = players[id].second;
+    players[id].second = nullptr;
+    players.erase(id);
+    if (!timeEnd) scoreTable.deletePlayer(id);
+    delete playerForDelete;
 }
 
 // WORLD TESTS
@@ -267,21 +344,21 @@ TEST_F(WorldTest, worldInit)
 
 TEST_F(WorldTest, addPlayer)
 {
-  Player p = Player({5, 4}, {3, 7}, 0, softRed, "../../Rendering Raylib/resources/player_1.png");
+  Player p = Player({5, 4}, 40, softRed, "Ivan");
   std::vector<Player> players;
-  wt->addPlayer(p);
+  wt->addPlayer(0, "Ivan");
   players.push_back(p);
   EXPECT_EQ(players.size(), 1);
 }
 
 TEST_F(WorldTest, removePlayer)
 {
-  Player p = Player({5, 4}, {3, 7}, 0, softRed, "../../Rendering Raylib/resources/player_1.png");
+  Player p = Player({5, 4}, 40, softRed, "Ivan");
   std::vector<Player> players;
   p.setId(5);
-  wt->addPlayer(p);
+  wt->addPlayer(1, "Ivan");
   players.push_back(p);
-  wt->removePlayer(5);
+  wt->removePlayer(1);
   players.pop_back();
   EXPECT_EQ(players.size(), 0);
 }
@@ -310,7 +387,8 @@ Color changeLightness(const Color& color, const int delta)
     return {r, g, b, 255};
 }
 
-float constrainAngle360(float angle) {
+double constrainAngle360(const double angle) 
+{
     return std::fmod(std::fmod(angle, 360.0) + 360.0, 360.0);
 }
 
@@ -343,26 +421,88 @@ TEST(ToolsTest, RadToDeg)
 
 TEST(ToolsTest, constrainAngle360)
 {
-    EXPECT_FLOAT_EQ(constrainAngle360(40), 40);
+    const double angle = 40;
+    EXPECT_DOUBLE_EQ(constrainAngle360(angle), 40);
 }
 
 // WEAPON FUNCTIONS
-Weapon::Weapon(const std::string& gun, int cartridges, int oneClip, int maxCartridges, int damage) :
-    actions(), cartridges(cartridges), oneClip(oneClip), maxCartridges(maxCartridges),
-    curCartridge(oneClip), damage(damage)
-{
-    // //cartridgesTexture = LoadTexture("../../Rendering Raylib/resources/cartridges.png");
-    // //redScope = LoadTexture("../../Rendering Raylib/resources/scope.png");
-    // //font = LoadFontEx("../../Rendering Raylib/resources/Calibri.ttf", 30, nullptr, 0);
-    // bgCarts = {CARTRIDGES_X, CARTRIDGES_Y, (float)cartridgesTexture.width + 2 * THICKNESS_FRAME, 
-    //             (float)cartridgesTexture.height + 2 * THICKNESS_FRAME};
-    // //soundShoot = LoadSound("../../Rendering Raylib/resources/shoot.mp3");
-    // //soundReload = LoadSound("../../Rendering Raylib/resources/reload.mp3");
-    // //soundEmpty = LoadSound("../../Rendering Raylib/resources/empty.mp3");
+Weapon::Weapon(const std::string& gun, int cartridges, int oneClip, int damage) :
+    actions(), cartridges(cartridges), oneClip(oneClip), curCartridge(oneClip), damage(damage)
+{ }
 
-    // std::vector<std::string> files = {"/shootRight.png", "/shootLeft.png", "/reloadLeft.png", "/reloadRight.png"};
-    // for (size_t i = 0; i < files.size(); ++i) {
-    //     actions.push_back(LoadTexture((gun + files[i]).c_str()));
-    //     animFrames.push_back({actions.back().width / WIDTH, actions.back().height / HEIGHT});
-    // }
+bool Weapon::checkShooting() const
+{
+    return isShooting;
+}
+
+bool Weapon::checkReloading() const
+{
+    return isReloading;
+}
+
+// WEAPON FUNCTIONS
+struct WeaponTest : public testing::Test {
+  Weapon *wt;
+
+  void SetUp() { wt = new Weapon("glock", 20, 4, 5); }
+  void TearDown() { delete wt; }
+};
+
+TEST_F(WeaponTest, checkShooting)
+{
+  EXPECT_EQ(wt->checkShooting(), false);
+}
+
+TEST_F(WeaponTest, checkReloading)
+{
+  EXPECT_EQ(wt->checkReloading(), false);
+}
+
+// USER FUNTIONS
+User::User(const int id, const std::string& nickName) : id(id), nickName(nickName) {}
+
+User::User(const User &other) : id(other.id), nickName(other.nickName) {}
+
+int User::getId() const {
+    return id;
+}
+
+std::string User::getNickName() const {
+    return nickName;
+}
+
+bool User::getFlagActive() const {
+    return active;
+}
+
+bool User::getFlagInGame() const {
+    return inGame;
+}
+
+// USER TESTS
+struct UserTest : public testing::Test {
+  User *ut;
+
+  void SetUp() { ut = new User(0, "Ivan"); }
+  void TearDown() { delete ut; }
+};
+
+TEST_F(UserTest, getId)
+{
+  EXPECT_EQ(ut->getId(), 0);
+}
+
+TEST_F(UserTest, getNickName)
+{
+  EXPECT_EQ(ut->getNickName(), "Ivan");
+}
+
+TEST_F(UserTest, getFlagActive)
+{
+  EXPECT_EQ(ut->getFlagActive(), true);
+}
+
+TEST_F(UserTest, getFlagInGame)
+{
+  EXPECT_EQ(ut->getFlagInGame(), false);
 }
