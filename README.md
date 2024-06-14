@@ -35,7 +35,7 @@
 ## Website
 
 ![](images/mainScreenWeb.png)
-![](images/AboutUs.png)
+![](images/aboutUs.png)
 
 1. Развёртка происходит с помощью команды `docker-compose up`; 
 2. После этого становится возможным открыть сайт через localhost на 80 порте (`localhost:80`);
