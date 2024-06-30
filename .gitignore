@@ -35,3 +35,9 @@ build
 # Vscode
 .vscode
 .vs
+
+#Project
+Rendering raylib\out
+Rendering raylib\build
+Server\out
+
