@@ -8,10 +8,14 @@
 #include <thread>
 
 namespace {    
-    const int MAX_PLAYERS = 10;    
-    unsigned short TCPPort = 55001;
-    unsigned short ServUDPport = 55003;
-    unsigned short ClientUDPPort = 50004;
+    const int MAX_PLAYERS = 4;    
+    unsigned short TCPPort = 42001;
+    unsigned short ClientPlayerUDPPort = 42002; 
+    unsigned short ServWorldUDPPort = 42003;
+    unsigned short ClientWorldUDPPort = 42004;
+    unsigned short ClientMessageUDPPort = 42005;
+    unsigned short ServPlayerUDPPort = 42006;
+    unsigned short ServMesssageUDPPort = 42007;
     const unsigned short TICK_RATE = 20;
 }
 

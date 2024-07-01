@@ -2,24 +2,21 @@
 #define CLIENT_HPP
 
 #include "World.hpp"
+#include "ScreenSaver.hpp"
 #include <SFML/Network.hpp>
+#include <string>
 
-namespace {    
-    const int MAX_PLAYERS = 10;    
-    unsigned short TCPPort = 55001;
-    unsigned short ServUDPport = 55003;
-    unsigned short ClientUDPPort = 50004;
+namespace {       
+    unsigned short ServTCPPort = 42001;
+    unsigned short ClientPlayerUDPPort = 42002; 
+    unsigned short ServWorldUDPPort = 42003;
+    unsigned short ClientWorldUDPPort = 42004;
+    unsigned short ClientMessageUDPPort = 42005;
+    unsigned short ServPlayerUDPPort = 42006;
+    unsigned short ServMesssageUDPPort = 42007;
     const unsigned short TICK_RATE = 20;
     sf::IpAddress ServIP = sf::IpAddress(""); //write serv ip here
 }
 
-enum MESSAGES {
-    PLAYER_DISCONNECTED,
-    NEW_PLAYER_CONNECTED
-    //SEND_DATA
-};
-
-void CheckNewData(sf::TcpSocket& TCPsock, sf::UdpSocket& UDPsock, World& world);
-void SendData(sf::UdpSocket& UDPsock);
 
 #endif
