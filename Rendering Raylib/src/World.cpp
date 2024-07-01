@@ -296,4 +296,48 @@ void World::setTimeEnd(const double time) { timeEnd = time; }
 
 int World::GetCurPlayerID() {
     return curPlayer;
+sf::Packet& operator>>(sf::Packet& pack, World& world) 
+{
+    pack >> world.timer;
+    bool isPlayers = false;
+    pack >> isPlayers;
+    while (isPlayers) 
+    {       
+        int id;        
+        bool pairFirstParam;
+        pack >> id >> pairFirstParam;
+        if (!world.players.contains(id)) 
+        {
+            Vector2 pos; float angle = 0; Color color;
+            for (auto &[slot, idPlayer] : world.slots) 
+            {
+                if (idPlayer == -1) {
+                    std::tie(pos, angle, color) = slot;
+                    idPlayer = id;
+                    break;
+                }
+            }
+            Player *pl = new Player(pos, angle, color, "");
+            world.players[id] = std::make_pair(pairFirstParam, pl);
+        } 
+        else if (world.firstWorld || 
+            std::chrono::duration_cast<std::chrono::milliseconds>(world.tPrevWorld - std::chrono::steady_clock::now()).count() >= 5000)
+        {
+            world.firstWorld = false;
+            world.tPrevWorld = std::chrono::steady_clock::now();
+            pack >> *world.players[id].second;
+            world.players[id].first = pairFirstParam;
+        }
+        else 
+        {
+            Player pl;
+            pack >> pl;
+        }
+        pack >> isPlayers;
+    }
+    //for (auto& sl : world.slots) {
+    //    pack >> std::get<0>(sl.first).x >> std::get<0>(sl.first).y >> std::get<1>(sl.first) >> sl.second;
+    //}
+    pack >> world.timeEnd;
+    return pack;
 }

@@ -49,6 +49,8 @@ public:
     int getPlayersNumber() const;
     double getTimeEnd() const;
     Player* GetPlayer(int id);
+
+    friend sf::Packet& operator>>(sf::Packet& pack, World& world);
 private:
     Fps fps;
     Rectangle floor;
@@ -62,5 +64,7 @@ private:
     void showMiniMap(const int id) const;
     void showMap(const int id) const;
 };
+
+sf::Packet& operator>>(sf::Packet& pack, World& world);
 
 #endif
