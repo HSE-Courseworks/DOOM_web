@@ -1,7 +1,7 @@
 #include "PlayerInfo.hpp"
 
-PlayerInfo::PlayerInfo(sf::TcpSocket* TCPsok, sf::IpAddress plIP, unsigned short p) 
-    : TCPsock(TCPsok), ip(plIP), port(p), player() {}
+PlayerInfo::PlayerInfo(int _id, sf::IpAddress plIP, unsigned short p) 
+    : id(_id), ip(plIP.toString()), port(p) {} //player() {}
 
 //PlayerInfo& PlayerInfo::operator=(PlayerInfo&& pl) {
 //    this->TCPsock = pl.TCPsock;
@@ -16,23 +16,31 @@ PlayerInfo::PlayerInfo(sf::TcpSocket* TCPsok, sf::IpAddress plIP, unsigned short
 //PlayerInfo::PlayerInfo(PlayerInfo&& plInf) 
 //    : TCPsock(std::move(plInf.TCPsock)), ip(plInf.ip), port(plInf.port), player(plInf.player) {}
 
-void PlayerInfo::SendTCP(sf::Packet& pack) {
-    TCPsock->send(pack);
-}
+//void PlayerInfo::SendTCP(sf::Packet& pack) {
+//    TCPsock->send(pack);
+//}
 
-void PlayerInfo::SetPlayerID(int id) {
-    player.setId(id);
-} 
+//void PlayerInfo::SetPlayerID(int id) {
+//    player.setId(id);
+//} 
+//
+//int PlayerInfo::GetPlayerID() {
+//    return player.getId();
+//}   
+
+void PlayerInfo::SetPlayerID(int _id) {
+    this->id = _id;
+}
 
 int PlayerInfo::GetPlayerID() {
-    return player.getId();
-}   
-
-sf::TcpSocket* PlayerInfo::GetTCPSock() {
-    return TCPsock;
+    return this->id;
 }
 
-sf::IpAddress PlayerInfo::GetIP() {
+//sf::TcpSocket* PlayerInfo::GetTCPSock() {
+//    return TCPsock;
+//}
+
+sf::IpAddress& PlayerInfo::GetIP() {
     return ip;
 }
 
