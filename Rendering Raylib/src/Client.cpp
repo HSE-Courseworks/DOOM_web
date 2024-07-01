@@ -25,5 +25,11 @@ void ReceiveWorld(sf::UdpSocket& UDPsock, World *world) {
     UDPsock.receive(pack, ServIP, ServWorldUDPPort);
     pack >> *world;
 }
+
+void SendMessage(sf::UdpSocket& UDPsock, PlayerEvent ev) {
+    sf::Packet pack;
+    pack << ev;
+    UDPsock.send(pack, ServIP, ServMesssageUDPPort);
+}
 }
 
