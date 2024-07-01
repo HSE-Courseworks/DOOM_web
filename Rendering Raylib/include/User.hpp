@@ -12,6 +12,7 @@ public:
     void setNickName(const std::string &newNickName);
     void setFlagActive(bool flag);
     void setFlagInGame(bool flag);
+    void setId(int _id);
 
     int getId() const;
     std::string getNickName() const;

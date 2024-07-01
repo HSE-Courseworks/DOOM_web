@@ -10,6 +10,8 @@ void User::setFlagActive(bool flag) { active = flag; }
 
 void User::setFlagInGame(bool flag) { inGame = flag; }
 
+void User::setId(int _id) { id = _id; }
+
 int User::getId() const { return id; }
 
 std::string User::getNickName() const { return nickName; }
