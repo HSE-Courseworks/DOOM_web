@@ -18,5 +18,6 @@ namespace {
     sf::IpAddress ServIP = sf::IpAddress(""); //write serv ip here
 }
 
+bool ConnectToServ(std::string name, User* user);
 
 #endif
