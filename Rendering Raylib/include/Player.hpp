@@ -14,6 +14,7 @@
 #include <unordered_set>
 #include <sstream>
 #include <cmath>
+#include <SFML/Network.hpp>
 
 #define TIME_SEEN (3)
 #define DELTA (10e-4)
@@ -85,7 +86,7 @@ struct Equal
 class Player
 {
 public:
-    Player() = default;
+    Player();
     Player(const Vector2 &pos, const float angle, const Color &color, const std::string &nickName);
 
     void updatePosition(const Map &gameMap, const std::vector<Player*> &players, const float delta);
@@ -137,6 +138,8 @@ public:
     std::pair<float, int> getInfoCenterObject() const;
     const std::unordered_set<int> &getDetectedEnemy() const;
 
+    friend sf::Packet& operator>>(sf::Packet& pack, Player& pl);
+    friend sf::Packet& operator<<(sf::Packet& pack, Player& pl);
 private:
     int id, hp = 100, armor = 30, FOV, circlePoints, lastTimeShoot = 0, stageMoving = 0;
     bool map = true, isLogEnabled = false, scoreTable = false, isMoving = false;
@@ -167,4 +170,6 @@ private:
     std::pair<float, float> calcAngleFOVObject(const float radius, const Vector2 &position);
 };
 
+sf::Packet& operator>>(sf::Packet& pack, Player& pl);
+sf::Packet& operator<<(sf::Packet& pack, Player& pl);
 #endif

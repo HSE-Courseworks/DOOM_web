@@ -1,5 +1,35 @@
 #include "Player.hpp"
 
+Player::Player() : 
+    FOV(VIEW_ANGLE), circlePoints(COUNT_POINTS), sightDist(SIZE_PIXEL_MAP * 3), rotationAngle(),
+    gun(), nickName(""), color(), drawInfo(), segment(COUNT_POINTS)
+{
+    //font = LoadFontEx("resources/Calibri.ttf", FONT_SIZE_INFO, nullptr, 0);
+    //texturePlayer = LoadTexture("resources/player.png");
+    //healthTexture = LoadTexture("resources/health.png");
+    //armorTexture = LoadTexture("resources/armor.png");
+    //backGroundH = {HEALTH_X, HEALTH_Y, BUFFS_SIZE + 2 * THICKNESS_FRAME, BUFFS_SIZE + 2 * THICKNESS_FRAME};
+    //backGroundA = {ARMOR_X, ARMOR_Y, BUFFS_SIZE + 2 * THICKNESS_FRAME, BUFFS_SIZE + 2 * THICKNESS_FRAME};
+    //soundInjury = LoadSound("resources/injury.mp3");
+    //soundGetHp = LoadSound("resources/getHP.mp3");
+    //soundGetArmor = LoadSound("resources/getArmor.mp3");
+
+    //cameraPos.x = pos.x;
+    //cameraPos.y = pos.y;
+    //mapShiftX = pos.x - THICKNESS_MAP * 2;
+    //mapShiftY = pos.y - THICKNESS_MAP * 2;
+
+    mapDir[{0, 0}] = 0.0f;
+    mapDir[{1, 0}] = 0.0f;
+    mapDir[{1, 1}] = M_PI / 4;
+    mapDir[{0, 1}] = M_PI / 2;
+    mapDir[{-1, 1}] = 3 * M_PI / 4;
+    mapDir[{-1, 0}] = M_PI;
+    mapDir[{-1, -1}] = 5 * M_PI / 4;
+    mapDir[{0, -1}] = 3 * M_PI / 2;
+    mapDir[{1, -1}] = 7 * M_PI / 4;
+}
+
 Player::Player(const Vector2 &pos, const float angle, const Color &color, const std::string &nickName) : 
     FOV(VIEW_ANGLE), circlePoints(COUNT_POINTS), sightDist(SIZE_PIXEL_MAP * 3), rotationAngle(angle),
     gun("resources/guns/glock", 100, 20, 10), nickName(nickName), color(color), drawInfo(), segment(COUNT_POINTS)
@@ -35,10 +65,15 @@ void Player::updatePosition(const Map &gameMap, const std::vector<Player*> &play
     float rotAngle = DegToRad(rotationAngle), speed = delta * KOEF_SPEED;
     std::vector<std::pair<bool, Vector2>> dir;
 
-    dir.push_back({IsKeyDown(KEY_W), {1, 0}});
-    dir.push_back({IsKeyDown(KEY_A), {0, 1}});
-    dir.push_back({IsKeyDown(KEY_S), {-1, 0}});
-    dir.push_back({IsKeyDown(KEY_D), {0, -1}});
+    bool isKeyW = IsKeyDown(KEY_W),
+        isKeyA = IsKeyDown(KEY_A),
+        isKeyS = IsKeyDown(KEY_S),
+        isKeyD = IsKeyDown(KEY_D);
+
+    dir.push_back({isKeyW, {1, 0}});
+    dir.push_back({isKeyA, {0, 1}});
+    dir.push_back({isKeyS, {-1, 0}});
+    dir.push_back({isKeyD, {0, -1}});
 
     Vector2 result = {0, 0};
     for (size_t i = 0; i < dir.size(); ++i) {
@@ -673,4 +708,20 @@ std::pair<float, float> Player::calcAngleFOVObject(const float radius, const Vec
     double angleFOV = 2 * delta + 2 * eps;
 
     return {startAngle, angleFOV};
+}
+
+sf::Packet& operator>>(sf::Packet& pack, Player& pl) {
+    pack >> pl.hp >> pl.armor >> pl.FOV >> pl.circlePoints >> pl.lastTimeShoot
+        >> pl.stageMoving >> pl.map >> pl.isLogEnabled >> pl.scoreTable >> pl.isMoving
+        >> pl.sightDist >> pl.rotationAngle >> pl.mapShiftX >> pl.mapShiftY >> pl.whenDied
+        >> pl.nickName >> pl.cameraPos.x >> pl.cameraPos.y;
+    return pack;
+}
+
+sf::Packet& operator<<(sf::Packet& pack, Player& pl) {
+    pack << pl.hp << pl.armor << pl.FOV << pl.circlePoints << pl.lastTimeShoot
+        << pl.stageMoving << pl.map << pl.isLogEnabled << pl.scoreTable << pl.isMoving
+        << pl.sightDist << pl.rotationAngle << pl.mapShiftX << pl.mapShiftY << pl.whenDied
+        << pl.nickName << pl.cameraPos.x << pl.cameraPos.y;
+    return pack;
 }
