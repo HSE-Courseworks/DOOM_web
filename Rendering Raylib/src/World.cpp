@@ -294,8 +294,8 @@ double World::getTimeEnd() const { return timeEnd; }
 
 void World::setTimeEnd(const double time) { timeEnd = time; }
 
-int World::GetCurPlayerID() {
-    return curPlayer;
+Player* World::GetPlayer(int id) { return players[id].second; }
+
 sf::Packet& operator>>(sf::Packet& pack, World& world) 
 {
     pack >> world.timer;
