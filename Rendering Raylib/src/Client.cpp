@@ -31,5 +31,10 @@ void SendMessage(sf::UdpSocket& UDPsock, PlayerEvent ev) {
     pack << ev;
     UDPsock.send(pack, ServIP, ServMesssageUDPPort);
 }
+
+void SendPlayer(sf::UdpSocket& UDPsock, Player* player) {
+    sf::Packet pack;
+    pack << *player;
+    UDPsock.send(pack, ServIP, ServPlayerUDPPort);
 }
 

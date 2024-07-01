@@ -21,5 +21,6 @@ namespace {
 bool ConnectToServ(std::string name, User* user);
 void ReceiveWorld(sf::UdpSocket& UDPsock, World *world);
 void SendMessage(sf::UdpSocket& UDPsock, PlayerEvent ev);
+void SendPlayer(sf::UdpSocket& UDPsock, Player* player);
 
 #endif
