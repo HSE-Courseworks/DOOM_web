@@ -19,6 +19,6 @@ namespace {
     const unsigned short TICK_RATE = 20;
 }
 
-void CheckNewConnections(sf::TcpListener &TCPListener, std::list<Lobby> &lobbies, std::list<std::thread> &thrdsComputeLobbies);
+void CheckNewConnections(sf::TcpListener &TCPListener, std::list<std::pair<Lobby*, std::thread>> &listLobbiesThreads);
 
 #endif
