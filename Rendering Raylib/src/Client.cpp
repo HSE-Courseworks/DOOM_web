@@ -19,5 +19,11 @@ bool ConnectToServ(std::string name, User* user) {
     TraceLog(LOG_INFO, "Has not connected to server.");
     return false;
 }
+
+void ReceiveWorld(sf::UdpSocket& UDPsock, World *world) {
+    sf::Packet pack;
+    UDPsock.receive(pack, ServIP, ServWorldUDPPort);
+    pack >> *world;
+}
 }
 
