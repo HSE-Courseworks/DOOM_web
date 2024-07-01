@@ -6,8 +6,9 @@
 #include "Client.hpp"
 
 World::World(const std::string &map, const std::string &textures) : 
-    gameMap(map), timer(300), scoreTable(), players(), fps()
-{
+    gameMap(map), timer(300), scoreTable(), players(), fps(), tPrevWorld(std::chrono::steady_clock::now()), firstWorld(true)
+{    
+    MessageUDPsock.bind(ClientMessageUDPPort);
     gameMap.readTextures(textures);
     gameMap.findObjects();
     floor = {0, GetRenderHeight() / 2.0f,
@@ -47,9 +48,10 @@ void World::addPlayer(const int id, const std::string &nickName)
     }
 }
 
-void World::addPlayer(int id) {
-    players[id] = {true, new Player()};
-}
+//void World::addPlayer(int id) {
+//    players[id] = {true, new Player()};
+//    players[id].second->setId(id);
+//}
 
 void World::removePlayer(const int id)
 {
@@ -130,6 +132,7 @@ Pages World::update(const int id, const float speed)
         curPlayerObj->getGun().setFlagLeftHand(!curPlayerObj->getGun().getFlagLeftHand());
 
     if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
+        SendMessage(MessageUDPsock, SHOOT);
         auto infoShoot = curPlayerObj->getInfoCenterObject();
         int damage = curPlayerObj->getGun().shoot(infoShoot);
         curPlayerObj->setLastTimeShoot(timer.getLeftSeconds());
@@ -142,9 +145,13 @@ Pages World::update(const int id, const float speed)
         }
     }
 
-    if (IsKeyReleased(KEY_R)) curPlayerObj->getGun().reload();
+    if (IsKeyReleased(KEY_R)) {
+        SendMessage(MessageUDPsock, RELOAD);
+        curPlayerObj->getGun().reload();
+    }
 
     if (IsKeyReleased(KEY_E)) {
+        SendMessage(MessageUDPsock, PICK_UP);
         auto [dist, idObj] = curPlayerObj->getInfoCenterObject();
         if (idObj < 0 && dist < MAX_DIST_TO_GET) {
             if (idObj >= -COUNT_PICKUP_CATEG)
@@ -275,6 +282,10 @@ void World::reboot()
     timeEnd = 0;
     timer.reboot();
     scoreTable.reboot();
+}
+
+void World::sendMessage(PlayerEvent ev) {
+    SendMessage(MessageUDPsock, ev);
 }
 
 int World::getPlayersNumber() const { return players.size(); }

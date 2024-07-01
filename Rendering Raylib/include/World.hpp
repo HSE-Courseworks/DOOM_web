@@ -43,6 +43,8 @@ public:
     void show(const int id) const;
     void reboot();
 
+    void sendMessage(PlayerEvent ev);
+
     void setTimeEnd(const double time);
     int getPlayersNumber() const;
     double getTimeEnd() const;
