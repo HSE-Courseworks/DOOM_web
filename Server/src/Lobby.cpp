@@ -11,13 +11,13 @@ using namespace std::chrono_literals;
 
 int Lobby::lobbyCount = 0;
 
-sf::Packet& operator<<(sf::Packet& pack, std::unordered_map<int, std::pair<std::thread*, PlayerInfo*>>& players) {
-    for (auto& pl : players) {
-        pack << pl.first;
-        pack << *(pl.second.second);
-    }
-    return pack;
-}
+//sf::Packet& operator<<(sf::Packet& pack, std::unordered_map<int, std::pair<std::thread*, PlayerInfo*>>& players) {
+//    for (auto& pl : players) {
+//        pack << pl.first;
+//        pack << *(pl.second.second);
+//    }
+//    return pack;
+//}
 
 Lobby::Lobby() : lId(lobbyCount), players(), firstFreePlayerID(0), /*lastPlayerID(0), vecID(),*/  world("resources/maze.txt", "resources/textures.txt") {
     ++lobbyCount;
