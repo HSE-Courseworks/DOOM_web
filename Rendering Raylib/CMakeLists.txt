@@ -1,5 +1,7 @@
-cmake_minimum_required(VERSION 3.10...3.27) 
+cmake_minimum_required(VERSION 3.29) 
 project(DOOM_web)
+
+set(CMAKE_BUILD_TYPE Debug)
 
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_CXX_STANDARD 20)
@@ -45,7 +47,7 @@ add_executable(main ${all_SRCS})
 target_link_libraries(main raylib sfml-network)
 
 # Web Configurations
-if (${PLATFORM} STREQUAL "Web")
-    # Tell Emscripten to build an main.html file.
-    set_target_properties(main PROPERTIES SUFFIX ".html")
-endif()
+#if (${PLATFORM} STREQUAL "Web")
+#    # Tell Emscripten to build an main.html file.
+#    set_target_properties(main PROPERTIES SUFFIX ".html")
+#endif()
