@@ -1,4 +1,5 @@
 #include "ScoreTable.hpp"
+#include "Client.hpp"
 
 ScoreTable::ScoreTable() : gameInfo()
 {

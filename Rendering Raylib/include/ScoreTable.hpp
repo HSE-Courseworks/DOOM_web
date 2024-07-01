@@ -9,7 +9,6 @@
 #include <string>
 #include <algorithm>
 
-#define MAX_PLAYERS (4)
 #define SCORE_X (1450)
 #define SCORE_Y (550)
 #define MARGIN (20)
