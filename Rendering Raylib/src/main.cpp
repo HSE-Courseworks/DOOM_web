@@ -1,10 +1,12 @@
 #include "raylib.h"
 #include "ScreenSaver.hpp"
 
+#include "Client.hpp"
 #include "World.hpp"
 #include "Fps.hpp"
 #include "Client.hpp"
 #include <iostream>
+#include <chrono>
 
 int main() 
 {
@@ -20,32 +22,34 @@ int main()
 
     World world("resources/maze.txt", "resources/textures.txt");
     std::vector<ScreenSaver *> screenSavers;
-    screenSavers.push_back(new ScreenSaver(User(1, "Lolbl4")));
-    screenSavers.push_back(new ScreenSaver(User(2, "Sadness")));
-    screenSavers.push_back(new ScreenSaver(User(3, "Xlopchik13")));
+    screenSavers.push_back(new ScreenSaver(User(0, "Lolbl4")));
+    //screenSavers.push_back(new ScreenSaver(User(2, "Sadness")));
+    //screenSavers.push_back(new ScreenSaver(User(3, "Xlopchik13")));
     int cur = 0;
-
-    sf::TcpSocket TCPsock;
-    sf::UdpSocket UDPsock;
-    if (TCPsock.connect(ServIP, TCPPort) != sf::TcpSocket::Done)
-        TraceLog(LOG_ERROR, "Connection error. The client has not connected to a serv.");
-    UDPsock.bind(ClientUDPPort);
-    TCPsock.setBlocking(false);
-    UDPsock.setBlocking(false);
+    bool isConnected = false;
+    sf::UdpSocket WorldUDPsock, PlayerUDPsock;
     while (!WindowShouldClose())
     {
-        CheckNewData(TCPsock, UDPsock, world);
         BeginDrawing();
         ClearBackground(BLACK);
 
         if (screenSavers[cur]->getPage() == Pages::GAME && !screenSavers[cur]->getUser().getFlagInGame()) {
+            isConnected = ConnectToServ(screenSavers[cur]->getUser().getNickName(), &screenSavers[0]->getUser());
+            if (isConnected) {
+                WorldUDPsock.bind(ClientWorldUDPPort);
+                PlayerUDPsock.bind(ClientPlayerUDPPort);
+                ReceiveWorld(WorldUDPsock, &world);
+                WorldUDPsock.setBlocking(false);
+            }
             int id = screenSavers[cur]->getUser().getId();
             std::string nickName = screenSavers[cur]->getUser().getNickName();
 
             screenSavers[cur]->getUser().setFlagInGame(true);
-            world.addPlayer(id, nickName);
             screenSavers[cur]->setWorld(&world);
-            world.timer.start();
+            if (!isConnected) {
+                world.addPlayer(id, nickName);
+                world.timer.start();
+            }
         }
         else if (screenSavers[cur]->getPage() == Pages::MENU && screenSavers[cur]->getUser().getFlagInGame()) {
             int id = screenSavers[cur]->getUser().getId();
@@ -59,29 +63,32 @@ int main()
         }
 
         bool exit = screenSavers[cur]->update();
+
         screenSavers[cur]->show();
 
-        if (!world.getTimeEnd() && !world.timer.getLeftSeconds()) world.setTimeEnd(GetTime());
-        if (exit) break;
-
-        // Переключить user (нужно только для отладки, при мультиплеере нужно убрать)
-        if (IsKeyReleased(KEY_V)) {
-            cur = (cur + 1) % screenSavers.size();
-            Pages curPage = screenSavers[cur]->getPage();
-            if (curPage == Pages::GAME || curPage == Pages::RESURRECTION) HideCursor();
-            else ShowCursor();
+        if (!world.getTimeEnd() && !world.timer.getLeftSeconds()) 
+            world.setTimeEnd(GetTime());
+        if (exit) 
+            break;
+        if (isConnected) 
+        {
+            ReceiveWorld(WorldUDPsock, &world);
+            SendPlayer(PlayerUDPsock, world.GetPlayer(screenSavers[cur]->getUser().getId()));
         }
 
-        EndDrawing();
-        SendData(UDPsock);
-    }
-    sf::Packet pack;
-    pack << PLAYER_DISCONNECTED << game.GetCurPlayerID();
-    TCPsock.send(pack);
+        // Переключить user (нужно только для отладки, при мультиплеере нужно убрать)
+        //if (IsKeyReleased(KEY_V)) {
+        //    cur = (cur + 1) % screenSavers.size();
+        //    Pages curPage = screenSavers[cur]->getPage();
+        //    if (curPage == Pages::GAME || curPage == Pages::RESURRECTION) HideCursor();
+        //    else ShowCursor();
+        //}
 
-    game.removePlayer(1); //game.removePlayer(2); 
-    // game.removePlayer(3); // game.removePlayer(4);
-    UnloadMusicStream(music);
+        EndDrawing();
+    }
+
+    //world.removePlayer(1); world.removePlayer(2); 
+    //world.removePlayer(3);  world.removePlayer(4);
     CloseAudioDevice();
     CloseWindow();
     return 0;
