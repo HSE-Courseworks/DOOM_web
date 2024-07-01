@@ -1,10 +1,8 @@
 #include "raylib.h"
 #include "ScreenSaver.hpp"
-
 #include "Client.hpp"
 #include "World.hpp"
 #include "Fps.hpp"
-#include "Client.hpp"
 #include <iostream>
 #include <chrono>
 
@@ -57,6 +55,8 @@ int main()
             world.removePlayer(id);
             screenSavers[cur]->setWorld(nullptr);
             if (!world.getPlayersNumber()) { world.reboot(); world.timer.stop(); }
+            isConnected = false;
+            world.sendMessage(PLAYER_DISCONNECTED);
 
             // Игра закончена или все игроки отключились =>
             // имеет смысл привести объект класса World в исходное состояние
