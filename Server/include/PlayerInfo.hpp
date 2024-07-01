@@ -16,7 +16,7 @@ public:
     
     //void SendTCP(sf::Packet& pack);
 
-    void SetPlayerID(int id);
+    void SetPlayerID(int _id);
     int GetPlayerID();
     //sf::TcpSocket* GetTCPSock();
     sf::IpAddress& GetIP();
