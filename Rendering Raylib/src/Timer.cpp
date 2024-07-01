@@ -41,3 +41,11 @@ void Timer::show() const
 void Timer::reboot() { leftTime = duration; }
 
 int Timer::getLeftSeconds() const { return leftTime; }
+
+sf::Packet& operator>>(sf::Packet& pack, Timer& timer) {
+    pack >> timer.duration;
+    pack >> timer.leftTime;
+    pack >> timer.isStart;
+    pack >> timer.prevTime;
+    return pack;
+}

@@ -2,6 +2,7 @@
 #define TIMER_HPP
 
 #include "raylib.h"
+#include <SFML/Network.hpp>
 
 #define TIMER_X (860)
 #define TIMER_Y (20)
@@ -21,7 +22,7 @@ public:
     void reboot();
 
     int getLeftSeconds() const;
-
+    friend sf::Packet& operator>>(sf::Packet& pack, Timer& timer);
 private:
     int duration, leftTime;
     bool isStart = false;
@@ -30,5 +31,7 @@ private:
     Texture2D clockTexture;
     Font font;
 };
+
+sf::Packet& operator>>(sf::Packet& pack, Timer& timer);
 
 #endif
