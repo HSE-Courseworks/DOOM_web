@@ -1,0 +1,5 @@
+# resources/brown_stone.png 82 45 27 255
+* resources/stone.png 79 80 82 255
+C resources/cartridges_buff.png 52 59 41 255
+H resources/health_buff.png 245 71 71 255
+A resources/armor_buff.png 65 24 153 255
