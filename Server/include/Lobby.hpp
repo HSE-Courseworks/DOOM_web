@@ -2,6 +2,7 @@
 #define LOBBY_HPP
 
 #include "PlayerInfo.hpp"
+#include "World.hpp"
 #include <vector>
 #include <unordered_map>
 #include <mutex>
@@ -12,26 +13,32 @@
 class Lobby {
 public:
     Lobby();
+    Lobby(Lobby& l);
     Lobby(Lobby&& l);
+
+    Lobby& operator=(Lobby& l);
+
     ~Lobby();
 
-    PlayerInfo* operator[](int id);
+    Player* operator[](int id);
 
-    void Add(sf::TcpSocket* TCPsock);
+    void Add(sf::TcpSocket& TCPsock, sf::UdpSocket& UDPWorldsock, sf::UdpSocket& UDPPlayersock, sf::UdpSocket& UDPMessagesock);
+    void PushEvent(PlayerEvent ev, int id);
     void Remove(int playerID);
-    void SendAllTCP(sf::Packet &pack);
-    void ExchangeData();
+    //void SendAllTCP(sf::Packet &pack);
+    void ExchangeData(sf::UdpSocket& UDPWorldsock);
 
     int GetSize();
-    int GetLastPlayerID();
+    int GetID();
+    //int GetLastPlayerID();
+    int GetFirstFreePlayerID();
 
     static int lobbyCount;
 private:
     int lId;
     std::unordered_map<int, std::pair<std::thread*, PlayerInfo*>> players;
-    int lastPlayerID;
-    std::vector<int> vecID;
-    std::mutex mtx;
+    int firstFreePlayerID;
+    World world;
 };
 
 sf::Packet& operator<<(sf::Packet& pack, std::unordered_map<int, std::pair<std::thread*, PlayerInfo*>>& players);

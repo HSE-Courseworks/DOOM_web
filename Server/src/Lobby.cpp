@@ -5,6 +5,7 @@
 #include <thread>
 #include <list>
 #include <iostream>
+#include <SFML/Network.hpp>
 
 using namespace std::chrono_literals;
 
@@ -18,14 +19,26 @@ sf::Packet& operator<<(sf::Packet& pack, std::unordered_map<int, std::pair<std::
     return pack;
 }
 
-Lobby::Lobby() : lId(lobbyCount), players(), lastPlayerID(0), vecID(), mtx() {
+Lobby::Lobby() : lId(lobbyCount), players(), firstFreePlayerID(0), /*lastPlayerID(0), vecID(),*/  world("resources/maze.txt", "resources/textures.txt") {
     ++lobbyCount;
+    world.timer.start();
     std::cout << "New lobby has been created. Lobby: " << lId << std::endl;
 }
 
-Lobby::Lobby(Lobby&& l) : lId(l.lId), players(l.players), lastPlayerID(l.lastPlayerID), vecID(l.vecID), mtx() {
-    ++lobbyCount;
-    std::cout << "New lobby has been created. Lobby: " << lId << std::endl;
+Lobby::Lobby(Lobby& l) : lId(l.lId), players(l.players), /*lastPlayerID(l.lastPlayerID), vecID(l.vecID),*/  world(l.world) {
+    //std::cout << "New lobby has been created. Lobby: " << lId << std::endl;
+}
+
+Lobby::Lobby(Lobby&& l) : lId(l.lId), players(l.players), /*lastPlayerID(l.lastPlayerID), vecID(l.vecID),*/  world(l.world) {
+    //std::cout << "New lobby has been created. Lobby: " << lId << std::endl;
+}
+
+Lobby& Lobby::operator=(Lobby& l) {
+    lId = l.lId;
+    players = l.players;
+    //lastPlayerID = l.lastPlayerID;
+    //vecID = l.vecID;
+    return *this;
 }
 
 Lobby::~Lobby() {
@@ -37,55 +50,63 @@ Lobby::~Lobby() {
     std::cout << "Lobby has been destroyed. Lobby: " << lId << std::endl;
 }
 
-PlayerInfo* Lobby::operator[](int id) {
-    return (players[id]).second;
+Player* Lobby::operator[](int id) {
+    return world.getPlayer(id);
 }
 
 void Lobby::Remove(int playerID) {
-    std::unique_lock thrdLock(mtx);
-    int idx = std::find(vecID.begin(), vecID.end(), playerID) - vecID.begin();
-	vecID.erase(vecID.begin() + idx);
+    //std::unique_lock thrdLock(mtx);
+    //int idx = std::find(vecID.begin(), vecID.end(), playerID) - vecID.begin();
+	//vecID.erase(vecID.begin() + idx);
 	players.erase(playerID);
+    world.removePlayer(playerID);
     std::cout << "Player has disconnected. Lobby: " << lId << " Player: " << playerID << std::endl;
 }
 
-void Lobby::Add(sf::TcpSocket *TCPsock) {
-    std::unique_lock thrdLock(mtx);
-    players.insert(std::make_pair(lastPlayerID, std::make_pair(
-        new std::thread(::ExchangeData, (players.at(lastPlayerID).second), this),
-        new PlayerInfo(TCPsock, TCPsock->getRemoteAddress(), TCPsock->getRemotePort() + 1)
-    )));
-    players.at(lastPlayerID).second->SetPlayerID(lastPlayerID);
-    std::cout << "New player. Lobby: " << lId << " Player: " << lastPlayerID << std::endl;
-    vecID.push_back(lastPlayerID++);
+void Lobby::Add(sf::TcpSocket& TCPsock, sf::UdpSocket& UDPWorldsock, sf::UdpSocket& UDPPlayersock, sf::UdpSocket& UDPMessagesock) {
+    PlayerInfo* pl = new PlayerInfo(firstFreePlayerID, TCPsock.getRemoteAddress(), 0);
+    players[firstFreePlayerID] = std::make_pair(new std::thread(::ExchangeData, pl, this, std::ref(UDPMessagesock), std::ref(UDPPlayersock)), pl);
+    sf::Packet pack;
+    TCPsock.receive(pack);
+    std::string name;
+    pack >> name;
+    pack.clear();
+    pack << firstFreePlayerID;
+    TCPsock.send(pack);
+    world.addPlayer(firstFreePlayerID, name);
+    std::cout << "New player. Lobby: " << lId << " Player: " << firstFreePlayerID << std::endl;
+    firstFreePlayerID++;
 }
 
-void Lobby::SendAllTCP(sf::Packet &pack) {
-    std::unique_lock thrdLock(mtx);
-    for (auto& pl : players) 
-        pl.second.second->SendTCP(pack);
+void Lobby::PushEvent(PlayerEvent ev, int id) {
+    world.pushEvent(ev, id);
 }
 
-void Lobby::ExchangeData() {
-//     for (auto& pl : players) 
-//         pl.second.first = std::thread(::ExchangeData, &pl.second, this); //OK
-    sf::UdpSocket UDPsock;
-    UDPsock.bind(ServUDPport);
-    std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now(), end;
+//void Lobby::SendAllTCP(sf::Packet &pack) {
+//    for (auto& pl : players) 
+//        pl.second.second->SendTCP(pack);
+//}
+
+void Lobby::ExchangeData(sf::UdpSocket& UDPsock) {
+    std::chrono::steady_clock::time_point start;
     while (true) {
-        if (std::chrono::duration_cast<std::chrono::milliseconds>(start - end + std::chrono::milliseconds(1000 / TICK_RATE)).count() > 0)
-			std::this_thread::sleep_for(start - end + std::chrono::milliseconds(1000 / TICK_RATE));
+        if (players.empty()) 
+            break;
+        world.compute();
+        std::this_thread::sleep_for(std::chrono::duration_cast<std::chrono::milliseconds>(start - std::chrono::steady_clock::now()) + std::chrono::milliseconds(1000 / TICK_RATE));
         start = std::chrono::steady_clock::now();
         sf::Packet pack;
-        std::unique_lock thrdLock(mtx);
-        pack << players;
-        thrdLock.unlock();
-        for (auto& pl : players) 
-            UDPsock.send(pack, pl.second.second->GetIP(), pl.second.second->GetPort());
-        end = std::chrono::steady_clock::now();
+        pack << world;
+        for (auto& pl : players) {
+            UDPsock.send(pack, pl.second.second->GetIP(), ClientWorldUDPPort);
+        }
     }
 }
 
 int Lobby::GetSize() { return players.size(); }
 
-int Lobby::GetLastPlayerID() { return vecID.back(); }
+int Lobby::GetID() { return lId; }
+
+int Lobby::GetFirstFreePlayerID() { return firstFreePlayerID; }
+
+//int Lobby::GetLastPlayerID() { return ; }
